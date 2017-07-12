@@ -1,0 +1,65 @@
+real bt gps
+===========
+
+root@EcoGreenINTERNET:/home/edl# sdptool browse 00:1B:C1:08:05:45 1
+Browsing 00:1B:C1:08:05:45 ...
+Service Name: SPP slave
+Service RecHandle: 0x10000
+Service Class ID List:
+  "Serial Port" (0x1101)
+Protocol Descriptor List:
+  "L2CAP" (0x0100)
+  "RFCOMM" (0x0003)
+    Channel: 1
+Language Base Attr List:
+  code_ISO639: 0x656e
+  encoding:    0x6a
+  base_offset: 0x100
+
+
+connect
+-------
+
+root@EcoGreenINTERNET:/home/edl# rfcomm connect /dev/rfcomm1 00:1B:C1:08:05:45 1
+Connected /dev/rfcomm1 to 00:1B:C1:08:05:45 on channel 1
+Press CTRL-C for hangup
+  C-c C-cDisconnected
+
+---
+
+Test this
+=========
+
+add -C to bluetoothd in systemctl start cmd
+
+sudo ./dyngps_server 
+
+on other machine:
+sdptool browse E4:A4:71:69:06:49
+
+opiz addr: 00:1A:7D:DA:71:13
+notebook addr: E4:A4:71:69:06:49
+---
+
+install compile bluez:
+http://blog.mrgibbs.io/bluez-5-39-ble-setup-on-the-raspberry-pi/
+
+systemctl enable bluetooth
+
+---
+
+./test-profile -p "/edl_dun" -n "spp" -s -C 1 -u "0x1101"
+
+	def NewConnection(self, path, fd, properties):
+                self.fd = fd.take()
+                print("NewConnection(%s, %d)" % (path, self.fd))
+                i = 0
+                while(True):
+                        print("pre seleep")
+                        time.sleep(1.0)
+        		print("pre write hello "+str(i))
+                        i += 1
+                        os.write(self.fd,"h")
+
+                        #break
+			
