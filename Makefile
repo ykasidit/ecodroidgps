@@ -2,10 +2,10 @@
 SRC_FILTER = .c
 LIBS  = 
 CFLAGS = -I.
-LDFLAGS = -lbluetooth -lpthread
+LDFLAGS = -lpthread
 CONF = .
 #SOURCES := $(wildcard ./*${SRC_FILTER} )
-SOURCES :=  $(shell find ./ -type f -maxdepth 1 -name '*${SRC_FILTER}')
+SOURCES :=  $(shell find ./ -maxdepth 1 -type f -name '*${SRC_FILTER}')
 ################
 
 #############config specific conf
