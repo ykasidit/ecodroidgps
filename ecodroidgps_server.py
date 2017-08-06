@@ -72,18 +72,14 @@ def killall_rfcomm_py():
     call_bash_cmd(cmd)
 
 
-def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
+def maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe):
 
     # popen vars
     p_netcat = None
-    p_nmea_in = None
     p_nmea_to_bt_list = []
 
-    netcat_bcast_cmd = "ncat -l -U {} -k --send-only < {}".format(bcast_nmea_out_pipe, nmea_in_pipe)
+    netcat_bcast_cmd = "while true; do cat {} ; sleep 1; done | ncat -l -U {} -k --send-only".format(args["gps_chardev"], bcast_nmea_out_pipe)
     printlog("maintain_nmea_broadcast_processes: netcat_bcast_cmd:", netcat_bcast_cmd)
-    
-    nmea_in_cmd = "while true; do cat {} ; sleep 3; done > {}".format(args["gps_chardev"], nmea_in_pipe) # cat and retry forever
-    printlog("maintain_nmea_broadcast_processes: nmea_in_cmd:", nmea_in_cmd)
 
     nmea_to_bt_cmds = []
     for itr in range(0, args["max_bt_serial_port_count"]):
@@ -106,7 +102,6 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
         printlog("killing main procs...")
         # kill all prev processes
         kill_popen_proc(p_netcat)
-        kill_popen_proc(p_nmea_in)
 
         for i in range(0, args["max_bt_serial_port_count"]):
             printlog("killing bt proc i {}".format(i))
@@ -114,21 +109,6 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
             p_nmea_to_bt_list[i] = None # dont re-kill same thing
             
         killall_rfcomm_py() # somehow some rfcomm.py still survive above
-        
-        try:
-            os.remove(nmea_in_pipe)
-        except:
-            pass
-
-        cmd = "mkfifo "+nmea_in_pipe
-        ret = call_bash_cmd(cmd)
-        if ret != 0:
-            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
-
-        cmd = "exec {}<>{}".format(tmp_fd, nmea_in_pipe)
-        ret = call_bash_cmd(cmd)
-        if ret != 0:
-            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
 
         try:
             os.remove(bcast_nmea_out_pipe)
@@ -139,11 +119,7 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
         p_netcat = popen_bash_cmd(netcat_bcast_cmd)
         time.sleep(1)
 
-        # start nmea cat proc
-        p_nmea_in = popen_bash_cmd(nmea_in_cmd)
-        time.sleep(1)
-        
-        watch_main_procs_and_maintain_bt_procs(args, [p_netcat, p_nmea_in], nmea_to_bt_cmds, p_nmea_to_bt_list)
+        watch_main_procs_and_maintain_bt_procs(args, [p_netcat], nmea_to_bt_cmds, p_nmea_to_bt_list)
         
         # end of while loop
 
@@ -285,9 +261,8 @@ args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassio
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
     exit(-1)
-    
-nmea_in_pipe = "/tmp/edg_nmea_bcast_in"
-bcast_nmea_out_pipe = "/tmp/edg_nmea_bcast_out"
+
+bcast_nmea_out_pipe = "/tmp/edg_out"
 tmp_fd = 33
 
 prepare_bt_device(args)
@@ -304,7 +279,7 @@ while(True):
             raise Exception("WARNING: specified gps_chardev file does NOT exist: "+args["gps_chardev"])
 
         printlog("nmea broadcasters ready - starting nmea reader and bt serial processes...")
-        maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe)
+        maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe)
 
     except:
         type_, value_, traceback_ = sys.exc_info()
