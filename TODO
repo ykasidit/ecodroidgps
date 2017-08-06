@@ -1,21 +1,3 @@
-* read and broadcast like:
+* handle bt usb removed during connect - must be able to handle
 
-https://serverfault.com/questions/747980/simpliest-unix-non-blocking-broadcast-socket
-
-Found solution at similar answer https://unix.stackexchange.com/questions/195880/socat-duplicate-stdin-to-each-connected-client. Socat seems can't work that way but ncat from nmap package does.
-
-It works same for unix socket:
-
-% mkfifo /tmp/messages-in
-% exec 8<>/tmp/messages-in  # hold the fifo open
-% ncat -l -U /tmp/messages-out -k --send-only < /tmp/messages-in
-
-% echo "test" > /tmp/messages-in
-
-% # every client connected to /tmp/messages-out will get "test"
-message
-
----
-
-sudo cat /dev/ttyACM0 > /tmp/messages-in
-nc -U /tmp/messages-out | sudo python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101"
+* make autostart and test from opi
