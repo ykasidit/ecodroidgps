@@ -1,5 +1,5 @@
-* identify why it's hanging - or use the c buffering code instead of
-   all this NC commands
+* identify why it's hanging - or use the ori buffering code instead of
+   all this NC commands that can block
 
 * handle bt usb removed during connect - must be able to handle
 
