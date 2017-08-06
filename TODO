@@ -1,3 +1,6 @@
+* identify why it's hanging - or use the c buffering code instead of
+   all this NC commands
+
 * handle bt usb removed during connect - must be able to handle
 
 * make autostart and test from opi
