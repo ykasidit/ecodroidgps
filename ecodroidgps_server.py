@@ -67,6 +67,11 @@ def parse_cmd_args():
     return vars(parser.parse_args())
 
 
+def killall_rfcomm_py():
+    cmd = 'pkill -f "rfcomm.py"'
+    call_bash_cmd(cmd)
+
+
 def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
 
     # popen vars
@@ -81,9 +86,9 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
     printlog("maintain_nmea_broadcast_processes: nmea_in_cmd:", nmea_in_cmd)
 
     nmea_to_bt_cmds = []
-    for itr in range(0, args["max_bt_serial_port_count"] + 1): # + 1 because first is the cat /dev/tt
+    for itr in range(0, args["max_bt_serial_port_count"]):
         i = itr + 1 # start at 1 for channels
-        cmd = 'nc -U {} | python -u {} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101"'.format(
+        cmd = 'nc -U {} | {} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101"'.format(
             bcast_nmea_out_pipe,
             os.path.join(args["bluez_compassion_path"], "rfcomm.py"),
             i,
@@ -106,7 +111,10 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
         for i in range(0, args["max_bt_serial_port_count"]):
             printlog("killing bt proc i {}".format(i))
             kill_popen_proc(p_nmea_to_bt_list[i])
-
+            p_nmea_to_bt_list[i] = None # dont re-kill same thing
+            
+        killall_rfcomm_py() # somehow some rfcomm.py still survive above
+        
         try:
             os.remove(nmea_in_pipe)
         except:
@@ -191,24 +199,19 @@ def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p
 
 
 def get_bash_cmdlist(cmd):
-    prefix = ""
-    if cmd.startswith("exec "):
-        pass
-    else:
-        cmd = "exec "+cmd
-    return ['/bin/bash', '-c', prefix+str(cmd)]
+    return ['/bin/bash', '-c', str(cmd)]
 
 
 def call_bash_cmd(cmd):
-    #cmd = get_bash_cmdlist(cmd)
+    cmd = get_bash_cmdlist(cmd)
     printlog("call cmd:", cmd)
-    return subprocess.call(cmd, shell=True, executable='/bin/bash')
+    return subprocess.call(cmd, shell=False)
 
 
 def popen_bash_cmd(cmd):
-    #cmd = get_bash_cmdlist(cmd)
+    cmd = get_bash_cmdlist(cmd)
     printlog("popen cmd:", cmd)
-    return subprocess.Popen(cmd, shell=True, executable='/bin/bash')
+    return subprocess.Popen(cmd, shell=False)
 
 
 def kill_popen_proc(proc):
@@ -216,15 +219,11 @@ def kill_popen_proc(proc):
         pass
     else:
         try:
-            cmd = "kill -INT {}".format(proc.pid)
-            popen_bash_cmd(cmd)
-            printlog("kill_popen_proc sent sigint")
-            time.sleep(0.1)
-            if not proc.poll() is None:
-                printlog("kill_popen_proc ended with code: {}".format(proc.poll()))
-            else:
-                printlog("kill_popen_proc still not ended after sigint - terminate() it")
-                proc.terminate()
+            cmd = "pkill -INT -P {}".format(proc.pid) # sent INT to all with parent -P
+            call_bash_cmd(cmd)
+            time.sleep(0.2)
+            proc.kill()
+            proc.terminate()
         except Exception as e:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
