@@ -82,7 +82,7 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
     netcat_bcast_cmd = "ncat -l -U {} -k --send-only < {}".format(bcast_nmea_out_pipe, nmea_in_pipe)
     printlog("maintain_nmea_broadcast_processes: netcat_bcast_cmd:", netcat_bcast_cmd)
     
-    nmea_in_cmd = "while true; do cat {} > {}; sleep 3; done".format(args["gps_chardev"], nmea_in_pipe) # cat and retry forever
+    nmea_in_cmd = "while true; do cat {} ; sleep 3; done > {}".format(args["gps_chardev"], nmea_in_pipe) # cat and retry forever
     printlog("maintain_nmea_broadcast_processes: nmea_in_cmd:", nmea_in_cmd)
 
     nmea_to_bt_cmds = []
