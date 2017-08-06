@@ -8,6 +8,7 @@ import logging
 import logging.handlers
 import argparse
 import traceback
+import signal
 
 """
 read and broadcast like:
@@ -80,8 +81,9 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
     printlog("maintain_nmea_broadcast_processes: nmea_in_cmd:", nmea_in_cmd)
 
     nmea_to_bt_cmds = []
-    for i in range(0, args["max_bt_serial_port_count"]):
-        cmd = 'nc -U {} | python {} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101"'.format(
+    for itr in range(0, args["max_bt_serial_port_count"] + 1): # + 1 because first is the cat /dev/tt
+        i = itr + 1 # start at 1 for channels
+        cmd = 'nc -U {} | python -u {} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101"'.format(
             bcast_nmea_out_pipe,
             os.path.join(args["bluez_compassion_path"], "rfcomm.py"),
             i,
@@ -96,16 +98,35 @@ def maintain_nmea_broadcast_processes(args, nmea_in_pipe, bcast_nmea_out_pipe):
     while(True):
         printlog("maintain_nmea_broadcast_processes: main loop start")
 
+        printlog("killing main procs...")
         # kill all prev processes
         kill_popen_proc(p_netcat)
         kill_popen_proc(p_nmea_in)
+
         for i in range(0, args["max_bt_serial_port_count"]):
+            printlog("killing bt proc i {}".format(i))
             kill_popen_proc(p_nmea_to_bt_list[i])
 
-        prepare_bt_device(args)
-        printlog("prepare bt device done...")
+        try:
+            os.remove(nmea_in_pipe)
+        except:
+            pass
 
-            
+        cmd = "mkfifo "+nmea_in_pipe
+        ret = call_bash_cmd(cmd)
+        if ret != 0:
+            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
+
+        cmd = "exec {}<>{}".format(tmp_fd, nmea_in_pipe)
+        ret = call_bash_cmd(cmd)
+        if ret != 0:
+            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
+
+        try:
+            os.remove(bcast_nmea_out_pipe)
+        except:
+            pass
+
         # start netcat proc
         p_netcat = popen_bash_cmd(netcat_bcast_cmd)
         time.sleep(1)
@@ -144,6 +165,8 @@ def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p
                 # start it
                 cmd = nmea_to_bt_cmds[i]
                 p_nmea_to_bt_list[i] = popen_bash_cmd(cmd)
+                if not p_nmea_to_bt_list[i] is None:
+                    printlog("started pid:"+str(p_nmea_to_bt_list[i].pid))
                 continue
 
             # bt_proc is not None - check the proc ret code
@@ -154,6 +177,7 @@ def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p
             else:
                 # bt_proc_ret is not None - means process has ended - start it
                 printlog("watch_main_procs_and_maintain_bt_procs: ok bt_proc i {} ended - restart it".format(i))
+                cmd = nmea_to_bt_cmds[i]
                 p_nmea_to_bt_list[i] = popen_bash_cmd(cmd)
                 
             # end of for loop each bt_proc
@@ -167,19 +191,24 @@ def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p
 
 
 def get_bash_cmdlist(cmd):
-    return ['/bin/bash', '-c', cmd]
+    prefix = ""
+    if cmd.startswith("exec "):
+        pass
+    else:
+        cmd = "exec "+cmd
+    return ['/bin/bash', '-c', prefix+str(cmd)]
 
 
 def call_bash_cmd(cmd):
-    cmd = get_bash_cmdlist(cmd)
+    #cmd = get_bash_cmdlist(cmd)
     printlog("call cmd:", cmd)
-    return subprocess.call(cmd, shell=False)
+    return subprocess.call(cmd, shell=True, executable='/bin/bash')
 
 
 def popen_bash_cmd(cmd):
-    cmd = get_bash_cmdlist(cmd)
+    #cmd = get_bash_cmdlist(cmd)
     printlog("popen cmd:", cmd)
-    return subprocess.Popen(cmd, shell=False)
+    return subprocess.Popen(cmd, shell=True, executable='/bin/bash')
 
 
 def kill_popen_proc(proc):
@@ -187,7 +216,15 @@ def kill_popen_proc(proc):
         pass
     else:
         try:
-            proc.kill()
+            cmd = "kill -INT {}".format(proc.pid)
+            popen_bash_cmd(cmd)
+            printlog("kill_popen_proc sent sigint")
+            time.sleep(0.1)
+            if not proc.poll() is None:
+                printlog("kill_popen_proc ended with code: {}".format(proc.poll()))
+            else:
+                printlog("kill_popen_proc still not ended after sigint - terminate() it")
+                proc.terminate()
         except Exception as e:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -254,30 +291,15 @@ nmea_in_pipe = "/tmp/edg_nmea_bcast_in"
 bcast_nmea_out_pipe = "/tmp/edg_nmea_bcast_out"
 tmp_fd = 33
 
+prepare_bt_device(args)
+printlog("prepare_bt_device done...")
+
+
 while(True):
     print "starting ecodroidgps_server main loop - gps chardev:", args["gps_chardev"]
 
     tmp_fd += 1
     try:
-        try:
-            os.remove(nmea_in_pipe)
-        except:
-            pass
-        try:
-            os.remove(bcast_nmea_out_pipe)
-        except:
-            pass
-
-        cmd = "mkfifo "+nmea_in_pipe
-        ret = call_bash_cmd(cmd)
-        if ret != 0:
-            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
-
-        cmd = "exec {}<>{}".format(tmp_fd, nmea_in_pipe)
-        ret = call_bash_cmd(cmd)
-        if ret != 0:
-            raise Exception("failed to prepare nmea broadcaster: cmd failed: "+cmd)
-
         # now check if we can access the chardev
         if not os.path.exists(args["gps_chardev"]):
             raise Exception("WARNING: specified gps_chardev file does NOT exist: "+args["gps_chardev"])
