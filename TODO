@@ -1,11 +1,19 @@
-* unix domain sockets can get hang if one reader blocks - tested using
-/dev/urandom and multi readers and one blocker
-  * use the c code - popen read from the chardev - if disconnected
-   then reopen then re read - readline until buffer full or timelapse
-= N millis
-  * then save to global buff with id - if reader already sent that id
-   so dont resend
+* test after broken pipe or resoruce not avail (From dev disconnect
+   for many mins) then reconnect would fail until only hci0 down and
+up again
+  * try not use pipes - try rabbitmq or redis instead or mp call
+directly
+  * if bt_write: i 0 exception [Errno 11] Resource temporarily
+   unavailable and no devices connected try hci0 down and up every 60
+secs
+  * fifo creator do fcntl.fcntl(fd, F_SETPIPE_SZ, ) limit 512 only
+
+* cleanup code
+
+* test multi devices
+
 
 * handle bt usb removed during connect - must be able to handle
+* handle gps usb removed
 
 * make autostart and test from opi

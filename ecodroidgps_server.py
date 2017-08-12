@@ -248,6 +248,14 @@ def kill_popen_proc(proc):
 g_prev_edl_agent_proc = None
 def prepare_bt_device(args):
     global g_prev_edl_agent_proc
+
+    cmd = os.path.join(
+        args["bluez_compassion_path"]
+        ,"hciconfig"
+    ) + " -a hci0 down"
+    ret = call_bash_cmd(cmd)
+
+    
     # power the bt dev
     cmd = os.path.join(
         args["bluez_compassion_path"]
