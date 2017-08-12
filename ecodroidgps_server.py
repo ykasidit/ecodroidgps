@@ -10,6 +10,8 @@ import argparse
 import traceback
 import signal
 import multiprocessing as mp
+import stat
+
 
 """
 read input from gps chardev, keep at a central var, send input to each subprocess's tx pipe
@@ -51,38 +53,81 @@ def parse_cmd_args():
 
 ##################
 
-g_gps_data_mutex = mp.Lock()
-g_gps_data = ""
+# will be removed MAX_GPS_DATA_QUEUE_LEN/4 when qsize() is MAX_GPS_DATA_QUEUE_LEN/2
+MAX_GPS_DATA_QUEUE_LEN=100
 
-def read_gps(args):
-    global g_gps_data
-    global g_gps_data_mutex
-
-    print "read_gps start"
+def read_gps(args, queues):
+    
+    print "read_gps: start"
     while True:
         f = None
         try:
-            print("opening gps chardev:"+args["gps_chardev"])
+            #print("read_gps: opening gps chardev:"+args["gps_chardev"])
             f = open(args["gps_chardev"], "r")
             while True:
                 gps_data = f.readline()
-                print("read gps_data:", gps_data)
+                #print("read_gps: read gps_data:", gps_data)
                 if gps_data is None or gps_data == "":
                     raise Exception("gps chardev likely disconnected - try connect again")
-                with g_gps_data_mutex:
-                    g_gps_data = gps_data
+                for i in range(0, args["max_bt_serial_port_count"]):
+                    q = queues[i]
+                    qsize = q.qsize()
+                    print "read_gps: queue i {} q {} q.qsize() {}".format(i, q, qsize)
+                    if qsize >= MAX_GPS_DATA_QUEUE_LEN/2:
+                        for i in range(0, MAX_GPS_DATA_QUEUE_LEN/4):
+                            try:
+                                q.get_nowait()
+                            except:
+                                pass
+                    try:
+                        q.put_nowait(gps_data)
+                    except:
+                        pass
         except Exception as e:
-            print("read_gps exception: "+str(e))
+            print("read_gps: exception: "+str(e))
             time.sleep(1)
         finally:
             if not f is None:
                 f.close()
             
 
-def write_to_bt_processes(args):
-    global g_gps_data
+def bt_write(i, args, q):
 
-    pass
+    while(True):
+        txfd = None
+        try:
+            
+            while True:
+                qsize = q.qsize()
+                print("bt_write: i {} q {} q.qsize() {}".format(i, q, qsize))
+                data = q.get()
+                print("bt_write: i {} writing data: [{}]".format(i, data))
+                ret = None
+
+                ppath = "/dev/rfcomm{}_tx".format(i)
+                ppath_check_ret = stat.S_ISFIFO(os.stat(ppath).st_mode)
+                print "ppath_check_ret:", ppath_check_ret
+                if ppath_check_ret:
+                    pass
+                else:
+                    raise Exception("expected a pipe but it is not: {}".format(ppath))
+                if txfd is None:
+                    txfd = os.open(ppath, os.O_WRONLY|os.O_NONBLOCK)
+                ret = os.write(txfd, data)
+                print "txfd write done ret:", ret
+                
+        except Exception as e:
+            print "bt_write: i {} exception {}".format(i, str(e))
+            time.sleep(3)
+            try:
+                os.close(txfd)
+            except:
+                pass
+            txfd = None
+        finally:
+            if txfd != None:
+                os.close(txfd)
+            txfd = None
 
 
 
@@ -100,8 +145,7 @@ def start_bt_processes(args):
 
     p_nmea_to_bt_list = [] # popen vars
     nmea_to_bt_cmds = []
-    for itr in range(0, args["max_bt_serial_port_count"]):
-        i = itr + 1 # start at 1 for channels
+    for i in range(0, args["max_bt_serial_port_count"]):
         cmd = '{} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101" -N /dev/rfcomm{} -W'.format(
             os.path.join(args["bluez_compassion_path"], "rfcomm.py"),
             i,
@@ -151,17 +195,17 @@ def maintain_bt_procs(args, nmea_to_bt_cmds, p_nmea_to_bt_list):
             # bt_proc is not None - check the proc ret code
             bt_proc_ret = bt_proc.poll()
             if bt_proc_ret is None:
-                printlog("watch_main_procs_and_maintain_bt_procs: ok bt_proc i {} is running".format(i))
+                #printlog("watch_main_procs_and_maintain_bt_procs: ok bt_proc i {} is running".format(i))
                 continue
             else:
                 # bt_proc_ret is not None - means process has ended - start it
-                printlog("watch_main_procs_and_maintain_bt_procs: ok bt_proc i {} ended - restart it".format(i))
+                printlog("watch_main_procs_and_maintain_bt_procs: bt_proc i {} ended - restart it".format(i))
                 cmd = nmea_to_bt_cmds[i]
                 p_nmea_to_bt_list[i] = popen_bash_cmd(cmd)
                 
             # end of for loop each bt_proc
 
-        printlog("watch_main_procs_and_maintain_bt_procs: everything ok - sleep 5 secs...")
+        #printlog("watch_main_procs_and_maintain_bt_procs: everything ok - sleep 5 secs...")
         time.sleep(5)
         # end of while loop
 
@@ -253,6 +297,11 @@ def prepare_bt_device(args):
 args = parse_cmd_args()
 args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
 
+gps_data_queues = []
+
+for i in range(0, args["max_bt_serial_port_count"]):
+    gps_data_queues.append(mp.Queue(maxsize=MAX_GPS_DATA_QUEUE_LEN))
+
 args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
@@ -269,19 +318,41 @@ while(True):
         if not os.path.exists(args["gps_chardev"]):
             raise Exception("WARNING: specified gps_chardev file does NOT exist: "+args["gps_chardev"])
 
-        gps_reader_proc = None
-        #bt_maintainer_proc = mp.Process(target=start_bt_processes, args=(args,) )
-        #bt_writer_proc = mp.Process(target=write_to_bt_processes, args=(args,) )
+
+        gps_reader_proc = mp.Process(target=read_gps, args=(args, gps_data_queues) )
+        
+        bt_writer_procs = []
+        for i in range(0, args["max_bt_serial_port_count"]):
+            bt_writer_procs.append(mp.Process(target=bt_write, args=(i, args, gps_data_queues[i]) ))
+
+        mp.Process(target=bt_write, args=(args,) )
+        bt_maintainer_proc = mp.Process(target=start_bt_processes, args=(args,) )
         
         while (True):
-            print("gps_reader_proc:", gps_reader_proc)
-            if gps_reader_proc != None and gps_reader_proc.is_alive():
-                print "gps_reader_proc check ok"
+            
+            if gps_reader_proc.is_alive():
+                pass
+                #print("gps_reader_proc check ok")
             else:
-                print("gps_reader_proc is not alive - (re)start it")
-                gps_reader_proc = mp.Process(target=read_gps, args=(args,) )
+                print("gps_reader_proc is not alive - (re)start it")                
                 gps_reader_proc.start()
+
+            if bt_maintainer_proc.is_alive():
+                pass
+                #print("bt_maintainer_proc check ok")
+            else:
+                print("bt_maintainer_proc is not alive - (re)start it")                
+                bt_maintainer_proc.start()
+
+            for i in range(0, args["max_bt_serial_port_count"]):
+                if bt_writer_procs[i].is_alive():
+                    pass
+                    #print("bt_writer i {} check ok".format(i))
+                else:
+                    print("bt_writer i {} is not alive - (re)start it".format(i))
+                    bt_writer_procs[i].start()
                 
+            
             time.sleep(5)
             
     except:
