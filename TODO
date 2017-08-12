@@ -1,5 +1,10 @@
-* identify why it's hanging - or use the ori buffering code instead of
-   all this NC commands that can block
+* unix domain sockets can get hang if one reader blocks - tested using
+/dev/urandom and multi readers and one blocker
+  * use the c code - popen read from the chardev - if disconnected
+   then reopen then re read - readline until buffer full or timelapse
+= N millis
+  * then save to global buff with id - if reader already sent that id
+   so dont resend
 
 * handle bt usb removed during connect - must be able to handle
 

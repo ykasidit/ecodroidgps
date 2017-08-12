@@ -8,7 +8,7 @@
 #include <sys/mman.h>
 #include <libgen.h>
 
-enum {MAX_SIZE_USB_GPS_READ_BUFF = 512, max_fn_buf_len = 1024};
+enum {MAX_SIZE_USB_GPS_READ_BUFF = 1024, max_fn_buf_len = 1024};
 
 struct g_shared_data {
 	char g_usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF];
@@ -25,10 +25,18 @@ int print_nmea = 0;
 int usb_gps_reader_run(char* gps_dev_path)
 {
 	FILE* f;	
-	int rret;
 
-	char usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF];
-	int usb_gps_read_line_len = 0;
+	char *usb_gps_read_line = NULL; //[MAX_SIZE_USB_GPS_READ_BUFF];
+	size_t usb_gps_read_line_buf_len = 0;
+	size_t usb_gps_read_line_len = 0;
+
+	/*
+	  getline() manual
+
+	  If  *lineptr  is set to NULL and *n is set 0 before the call, then get‐
+	  line() will allocate a buffer for storing the line.  This buffer should
+	  be freed by the user program even if getline() failed.
+	 */
 
 	f = fopen(gps_dev_path,"r");
 	
@@ -38,37 +46,37 @@ int usb_gps_reader_run(char* gps_dev_path)
 	}
 
 	while (1) {
-		usb_gps_read_line[0] = 0;
 		
-		rret = fread(usb_gps_read_line, 1, MAX_SIZE_USB_GPS_READ_BUFF-1, f);
-		printf("reader: usb_gps_read_line_len: %d\n", rret);
+		usb_gps_read_line_len = getline(&usb_gps_read_line, &usb_gps_read_line_buf_len, f);
+		//printf("reader: usb_gps_read_line_len: %d\n", usb_gps_read_line_len);
 
-		usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF-1] = 0;		
-		usb_gps_read_line_len = strlen(usb_gps_read_line);
-
-
-		if (usb_gps_read_line_len) {
-			if (usb_gps_read_line_len > 1) {
-				if (print_nmea) {
-					printf("usb_gps_read_line: %s\n",usb_gps_read_line);
-					printf("usb_gps_read_line_len: %d\n",usb_gps_read_line_len);
-				}
-
-				pthread_mutex_lock(&g_shared->mutex);
-				strcpy(g_shared->g_usb_gps_read_line, usb_gps_read_line);
-				g_shared->g_usb_gps_read_line_id++;
-				pthread_mutex_unlock(&g_shared->mutex);
-
-				if (strstr(usb_gps_read_line, "$GPGLL")) {
-					pthread_mutex_lock(&g_shared->mutex);
-					strcpy(g_shared->g_usb_gps_read_line_gpgll, usb_gps_read_line);
-					pthread_mutex_unlock(&g_shared->mutex);
-				}
-
+		if (usb_gps_read_line_len > 1) {
+			
+			if (1) {
+				printf("USB READ >> usb_gps_read_line: %s\n",usb_gps_read_line);
+				printf("USB READ >> usb_gps_read_line_len: %lu\n",usb_gps_read_line_len);
 			}
+
+			pthread_mutex_lock(&g_shared->mutex);
+			strncpy(g_shared->g_usb_gps_read_line, usb_gps_read_line, MAX_SIZE_USB_GPS_READ_BUFF);
+			/*  Warning: If there is no null byte among the first n  bytes
+			    of src, the string placed in dest will not be null-terminated.
+			*/
+			g_shared->g_usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF-1] = 0;
+			printf("set usb_gps_read_line: [%s]\n", g_shared->g_usb_gps_read_line);
+			pthread_mutex_unlock(&g_shared->mutex);
+
+			if (strstr(usb_gps_read_line, "$GPGLL")) {
+				pthread_mutex_lock(&g_shared->mutex);
+				strncpy(g_shared->g_usb_gps_read_line_gpgll, usb_gps_read_line, MAX_SIZE_USB_GPS_READ_BUFF);
+				g_shared->g_usb_gps_read_line_gpgll[MAX_SIZE_USB_GPS_READ_BUFF-1] = 0;
+				pthread_mutex_unlock(&g_shared->mutex);
+			}
+				
+			g_shared->g_usb_gps_read_line_id++;
+			
 		} else {
-			printf("FATAL: got 0 size buff read from gps_dev_file - ABORT\n");
-			return -2;
+			printf("WARNING: got ! > 1 size buff read from gps_dev_file - skip saving it\n");
 		}
 	}
 
@@ -97,12 +105,13 @@ int bt_server_run(int instance)
 		
 	printf("pre popen rfcomm server proc - exec_dir %s\n", g_shared->exec_dir);
 
-	sprintf(bzc_rfcomm_cmd, "%s/bluez-compassion/rfcomm -p '/ecodroidgps_port_%d' -n 'spp' -s -C %d -u '0x1101'", g_shared->exec_dir, instance, instance);
+	sprintf(bzc_rfcomm_cmd, "/bin/bash -c \"while true; do %s/bluez-compassion/rfcomm -p '/ecodroidgps_port_%d' -n 'EcoDroidGPS Serial Port %d' -s -C %d -u '0x1101' ; echo 'bluez-compassion/rfcomm%d has exit'; sleep 3; done\"", g_shared->exec_dir, instance, instance, instance, instance);
 	printf("bzc_rfcomm_cmd: %s\n", bzc_rfcomm_cmd);
 	subp = popen(bzc_rfcomm_cmd, "w");
 
 	if (subp == NULL) {
 		printf("FATAL: bt_server_run: pid %d, instance %d popen returned null - ABORT\n", getpid(), instance);
+		return -1;
 	}
 
 	int fd = fileno(subp);	
@@ -127,15 +136,15 @@ int bt_server_run(int instance)
 		written_usb_gps_read_line_id = usb_gps_read_line_id;		
 
 		pthread_mutex_lock(&g_shared->mutex);
-		strcpy(usb_gps_read_line, g_shared->g_usb_gps_read_line);
+		strncpy(usb_gps_read_line, g_shared->g_usb_gps_read_line, MAX_SIZE_USB_GPS_READ_BUFF);
+		usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF - 1] = 0;
 		pthread_mutex_unlock(&g_shared->mutex);
 			
 		int len = strlen(usb_gps_read_line);
 		if (len) {
 		  //write to stdin of bt server proc
-			printf("bt_server_run: calling fputs on p\n");			
+			printf("bt_server_run: instance %d writing str len %d line: [%s]\n", instance, len, usb_gps_read_line);
 			wret = write(fd, usb_gps_read_line, len);
-			printf("bt_server_run: wret %d\n", wret);
 			if (print_nmea) {
 				printf("bt_server_run: instance %d: pre write usb_gps_read_line: %s\n", instance, usb_gps_read_line);
 			}
@@ -157,6 +166,29 @@ int bt_server_run(int instance)
 	printf("bt_server_run: instance %d exit\n", instance);
 
 	return 0;
+}
+
+void prepare_bt_dev(char* dir)
+{
+	int ret;
+	char cmd[512];
+	char* bluez_compassion_folder_name = "bluez-compassion";
+	
+	sprintf(cmd, "%s/%s/hciconfig -a hci0 up", dir, bluez_compassion_folder_name);
+	ret = system(cmd);
+	printf("prepare_bt_dev: ret: %d for cmd: %s\n", ret, cmd);
+
+	sprintf(cmd, "%s/%s/hciconfig -a hci0 piscan", dir, bluez_compassion_folder_name);
+	ret = system(cmd);
+	printf("prepare_bt_dev: ret: %d for cmd: %s\n", ret, cmd);
+	
+	sprintf(cmd, "%s/%s/hciconfig -a hci0 pairable 1", dir, bluez_compassion_folder_name);
+	ret = system(cmd);
+	printf("prepare_bt_dev: ret: %d for cmd: %s\n", ret, cmd);
+
+	sprintf(cmd, "killall edl_agent ; %s/%s/edl_agent &", dir, bluez_compassion_folder_name);
+	ret = system(cmd);
+	printf("prepare_bt_dev: ret: %d for cmd: %s\n", ret, cmd);
 }
 
 int main(int argc, char **argv)
@@ -188,6 +220,8 @@ int main(int argc, char **argv)
 		printf("FATAL: get exec_dir failed got NULL from dirname() - ABORT\n");
 		exit(rret);
 	}
+
+	prepare_bt_dev(dir);	
 
 	g_shared = mmap(
 		NULL,
@@ -257,7 +291,8 @@ int main(int argc, char **argv)
 		sleep(1);
 
 		pthread_mutex_lock(&g_shared->mutex);
-		strcpy(usb_gps_read_line, g_shared->g_usb_gps_read_line);
+		strncpy(usb_gps_read_line, g_shared->g_usb_gps_read_line, MAX_SIZE_USB_GPS_READ_BUFF);
+		usb_gps_read_line[MAX_SIZE_USB_GPS_READ_BUFF-1] = 0;
 		pthread_mutex_unlock(&g_shared->mutex);
 		if (1) {
 			printf("father_proc: g_usb_gps_read_line: %s\n", usb_gps_read_line);

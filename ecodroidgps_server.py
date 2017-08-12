@@ -28,8 +28,6 @@ It works same for unix socket:
 % # every client connected to /tmp/messages-out will get "test"
 message
 
----
-
 sudo cat /dev/ttyACM0 > /tmp/messages-in
 nc -U /tmp/messages-out | sudo python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101"
 """
@@ -70,6 +68,8 @@ def parse_cmd_args():
 def killall_rfcomm_py():
     cmd = 'pkill -f "rfcomm.py"'
     call_bash_cmd(cmd)
+    cmd = 'killall "rfcomm.py"'
+    call_bash_cmd(cmd)
 
 
 def maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe):
@@ -81,18 +81,25 @@ def maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe):
     netcat_bcast_cmd = "while true; do cat {} ; sleep 1; done | ncat -l -U {} -k --send-only".format(args["gps_chardev"], bcast_nmea_out_pipe)
     printlog("maintain_nmea_broadcast_processes: netcat_bcast_cmd:", netcat_bcast_cmd)
 
+    tx_writer_cmds = []
     nmea_to_bt_cmds = []
     for itr in range(0, args["max_bt_serial_port_count"]):
         i = itr + 1 # start at 1 for channels
-        cmd = 'nc -U {} | {} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101"'.format(
-            bcast_nmea_out_pipe,
+        cmd = '{} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101" --tx_from_reading_unix_domain_socket {}'.format(
             os.path.join(args["bluez_compassion_path"], "rfcomm.py"),
             i,
             i,
-            i                
+            i,
+            bcast_nmea_out_pipe
         )
         nmea_to_bt_cmds.append(cmd)
-        p_nmea_to_bt_list.append(None) # add placeholder
+        p_nmea_to_bt_list.append(None) # add placeholder for prev cmd
+
+        """
+        cmd = "while true; do timeout 1 ncat -U --recv-only {} > /dev/rfcomm{}_tx; done".format(bcast_nmea_out_pipe, i, i)
+        nmea_to_bt_cmds.append(cmd)
+        p_nmea_to_bt_list.append(None) # add placeholder for prev cmd
+        """
         
     printlog("maintain_nmea_broadcast_processes: nmea_to_bt_cmds:", nmea_to_bt_cmds)
 
@@ -173,21 +180,20 @@ def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p
     raise Exception("ASSERTION FAILED: watch_main_procs_and_maintain_bt_procs end of func control should never reach here")
     return -3
 
-
+"""
 def get_bash_cmdlist(cmd):
     return ['/bin/bash', '-c', str(cmd)]
-
+"""
 
 def call_bash_cmd(cmd):
-    cmd = get_bash_cmdlist(cmd)
+    #cmd = get_bash_cmdlist(cmd)
     printlog("call cmd:", cmd)
-    return subprocess.call(cmd, shell=False)
+    return subprocess.call(cmd, shell=True, executable='/bin/bash')
 
 
 def popen_bash_cmd(cmd):
-    cmd = get_bash_cmdlist(cmd)
     printlog("popen cmd:", cmd)
-    return subprocess.Popen(cmd, shell=False)
+    return subprocess.Popen(cmd, shell=True, executable='/bin/bash')
 
 
 def kill_popen_proc(proc):
@@ -257,6 +263,8 @@ def prepare_bt_device(args):
 ############### MAIN
 
 args = parse_cmd_args()
+args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"])
+
 args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
