@@ -9,27 +9,11 @@ import logging.handlers
 import argparse
 import traceback
 import signal
+import multiprocessing as mp
 
 """
-read and broadcast like:
+read input from gps chardev, keep at a central var, send input to each subprocess's tx pipe
 
-https://serverfault.com/questions/747980/simpliest-unix-non-blocking-broadcast-socket
-
-Found solution at similar answer https://unix.stackexchange.com/questions/195880/socat-duplicate-stdin-to-each-connected-client. Socat seems can't work that way but ncat from nmap package does.
-
-It works same for unix socket:
-
-% mkfifo /tmp/messages-in
-% exec 8<>/tmp/messages-in  # hold the fifo open
-% ncat -l -U /tmp/messages-out -k --send-only < /tmp/messages-in
-
-% echo "test" > /tmp/messages-in
-
-% # every client connected to /tmp/messages-out will get "test"
-message
-
-sudo cat /dev/ttyACM0 > /tmp/messages-in
-nc -U /tmp/messages-out | sudo python rfcomm.py -p "/my_serial_port" -n "Serial Port" -s -C 1 -u "0x1101"
 """
 
 def get_module_path():
@@ -65,50 +49,74 @@ def parse_cmd_args():
     return vars(parser.parse_args())
 
 
+##################
+
+g_gps_data_mutex = mp.Lock()
+g_gps_data = ""
+
+def read_gps(args):
+    global g_gps_data
+    global g_gps_data_mutex
+
+    print "read_gps start"
+    while True:
+        f = None
+        try:
+            print("opening gps chardev:"+args["gps_chardev"])
+            f = open(args["gps_chardev"], "r")
+            while True:
+                gps_data = f.readline()
+                print("read gps_data:", gps_data)
+                if gps_data is None or gps_data == "":
+                    raise Exception("gps chardev likely disconnected - try connect again")
+                with g_gps_data_mutex:
+                    g_gps_data = gps_data
+        except Exception as e:
+            print("read_gps exception: "+str(e))
+            time.sleep(1)
+        finally:
+            if not f is None:
+                f.close()
+            
+
+def write_to_bt_processes(args):
+    global g_gps_data
+
+    pass
+
+
+
+##################
+
+
 def killall_rfcomm_py():
     cmd = 'pkill -f "rfcomm.py"'
     call_bash_cmd(cmd)
     cmd = 'killall "rfcomm.py"'
     call_bash_cmd(cmd)
 
+    
+def start_bt_processes(args):
 
-def maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe):
-
-    # popen vars
-    p_netcat = None
-    p_nmea_to_bt_list = []
-
-    netcat_bcast_cmd = "while true; do cat {} ; sleep 1; done | ncat -l -U {} -k --send-only".format(args["gps_chardev"], bcast_nmea_out_pipe)
-    printlog("maintain_nmea_broadcast_processes: netcat_bcast_cmd:", netcat_bcast_cmd)
-
-    tx_writer_cmds = []
+    p_nmea_to_bt_list = [] # popen vars
     nmea_to_bt_cmds = []
     for itr in range(0, args["max_bt_serial_port_count"]):
         i = itr + 1 # start at 1 for channels
-        cmd = '{} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101" --tx_from_reading_unix_domain_socket {}'.format(
+        cmd = '{} -p "/ecodroidgps_serial_port_{}" -n "EcoDroidGPS Serial Port {}" -s -C {} -u "0x1101" -N /dev/rfcomm{} -W'.format(
             os.path.join(args["bluez_compassion_path"], "rfcomm.py"),
             i,
             i,
             i,
-            bcast_nmea_out_pipe
+            i
         )
         nmea_to_bt_cmds.append(cmd)
         p_nmea_to_bt_list.append(None) # add placeholder for prev cmd
-
-        """
-        cmd = "while true; do timeout 1 ncat -U --recv-only {} > /dev/rfcomm{}_tx; done".format(bcast_nmea_out_pipe, i, i)
-        nmea_to_bt_cmds.append(cmd)
-        p_nmea_to_bt_list.append(None) # add placeholder for prev cmd
-        """
         
     printlog("maintain_nmea_broadcast_processes: nmea_to_bt_cmds:", nmea_to_bt_cmds)
 
     while(True):
-        printlog("maintain_nmea_broadcast_processes: main loop start")
 
-        printlog("killing main procs...")
-        # kill all prev processes
-        kill_popen_proc(p_netcat)
+        printlog("maintain_nmea_broadcast_processes: main loop start")
 
         for i in range(0, args["max_bt_serial_port_count"]):
             printlog("killing bt proc i {}".format(i))
@@ -117,37 +125,17 @@ def maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe):
             
         killall_rfcomm_py() # somehow some rfcomm.py still survive above
 
-        try:
-            os.remove(bcast_nmea_out_pipe)
-        except:
-            pass
-
-        # start netcat proc
-        p_netcat = popen_bash_cmd(netcat_bcast_cmd)
-        time.sleep(1)
-
-        watch_main_procs_and_maintain_bt_procs(args, [p_netcat], nmea_to_bt_cmds, p_nmea_to_bt_list)
+        maintain_bt_procs(args, nmea_to_bt_cmds, p_nmea_to_bt_list)
         
         # end of while loop
 
     return
 
 
-def watch_main_procs_and_maintain_bt_procs(args, p_main_list, nmea_to_bt_cmds, p_nmea_to_bt_list):
+def maintain_bt_procs(args, nmea_to_bt_cmds, p_nmea_to_bt_list):
     
     while(True):
         
-        for proc in p_main_list:
-            if proc is None:
-                printlog("watch_main_procs_and_maintain_bt_procs: one main proc is None return so caller can cleanup/restart")
-                return -1
-            pret = proc.poll()
-            if pret is None:
-                pass # ok proc running
-            else:
-                printlog("watch_main_procs_and_maintain_bt_procs: one main proc has exit:",proc,"- return so caller can cleanup/restart")
-                return -2
-            
         bt_list_len = len(p_nmea_to_bt_list)
         for i in range(0, bt_list_len):
             bt_proc = p_nmea_to_bt_list[i]
@@ -263,37 +251,44 @@ def prepare_bt_device(args):
 ############### MAIN
 
 args = parse_cmd_args()
-args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"])
+args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
 
 args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
     exit(-1)
 
-bcast_nmea_out_pipe = "/tmp/edg_out"
-tmp_fd = 33
-
 prepare_bt_device(args)
 printlog("prepare_bt_device done...")
-
 
 while(True):
     print "starting ecodroidgps_server main loop - gps chardev:", args["gps_chardev"]
 
-    tmp_fd += 1
     try:
         # now check if we can access the chardev
         if not os.path.exists(args["gps_chardev"]):
             raise Exception("WARNING: specified gps_chardev file does NOT exist: "+args["gps_chardev"])
 
-        printlog("nmea broadcasters ready - starting nmea reader and bt serial processes...")
-        maintain_nmea_broadcast_processes(args, bcast_nmea_out_pipe)
-
+        gps_reader_proc = None
+        #bt_maintainer_proc = mp.Process(target=start_bt_processes, args=(args,) )
+        #bt_writer_proc = mp.Process(target=write_to_bt_processes, args=(args,) )
+        
+        while (True):
+            print("gps_reader_proc:", gps_reader_proc)
+            if gps_reader_proc != None and gps_reader_proc.is_alive():
+                print "gps_reader_proc check ok"
+            else:
+                print("gps_reader_proc is not alive - (re)start it")
+                gps_reader_proc = mp.Process(target=read_gps, args=(args,) )
+                gps_reader_proc.start()
+                
+            time.sleep(5)
+            
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         printlog("WARNING: main loop got exception - retry after 5 secs - exception:", exstr)
         time.sleep(5)
 
-
+print("ecodroidgps_server - terminating")
 exit(0)
