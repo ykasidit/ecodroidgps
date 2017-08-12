@@ -1,3 +1,5 @@
+* check and make correct \r\n from our tx vs real cat from dev
+
 * test after broken pipe or resoruce not avail (From dev disconnect
    for many mins) then reconnect would fail until only hci0 down and
 up again
