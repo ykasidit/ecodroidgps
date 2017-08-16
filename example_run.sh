@@ -1,1 +1,1 @@
-sudo python ecodroidgps_server.py --gps_chardev /dev/ttyACM0 --max_bt_serial_port_count 1
+sudo python ecodroidgps.py --gps_chardev /dev/ttyACM0

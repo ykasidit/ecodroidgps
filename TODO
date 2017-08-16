@@ -1,4 +1,13 @@
-* check and make correct \r\n from our tx vs real cat from dev
+* for better multiconn state handling - dont use bluez-compassion
+   rfcomm.py - code a similar class to handle the connections and get
+   the fd directly from bluez instead of going through the limitations
+   of one-way pipes etc.
+
+* use dicts/lists/queus from multiprocessing -
+   https://stackoverflow.com/questions/6832554/python-multiprocessing-how-do-i-share-a-dict-among-multiple-processes
+   https://docs.python.org/2/library/multiprocessing.html#sharing-state-between-processes
+   to maintain open fds
+   
 
 * test after broken pipe or resoruce not avail (From dev disconnect
    for many mins) then reconnect would fail until only hci0 down and

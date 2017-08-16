@@ -18,6 +18,11 @@ read input from gps chardev, keep at a central var, send input to each subproces
 
 """
 
+# https://stackoverflow.com/questions/19225188/what-method-can-i-use-instead-of-file-in-python
+import inspect
+if not hasattr(sys.modules[__name__], '__file__'):
+    __file__ = inspect.getfile(inspect.currentframe())
+
 def get_module_path():
     return os.path.realpath(
         os.path.join(os.getcwd(), os.path.dirname(__file__))
@@ -72,7 +77,7 @@ def read_gps(args, queues):
                 for i in range(0, args["max_bt_serial_port_count"]):
                     q = queues[i]
                     qsize = q.qsize()
-                    print "read_gps: queue i {} q {} q.qsize() {}".format(i, q, qsize)
+                    #print "read_gps: queue i {} q {} q.qsize() {}".format(i, q, qsize)
                     if qsize >= MAX_GPS_DATA_QUEUE_LEN/2:
                         for i in range(0, MAX_GPS_DATA_QUEUE_LEN/4):
                             try:
@@ -99,14 +104,14 @@ def bt_write(i, args, q):
             
             while True:
                 qsize = q.qsize()
-                print("bt_write: i {} q {} q.qsize() {}".format(i, q, qsize))
+                #print("bt_write: i {} q {} q.qsize() {}".format(i, q, qsize))
                 data = q.get()
-                print("bt_write: i {} writing data: [{}]".format(i, data))
+                #print("bt_write: i {} writing data: [{}]".format(i, data))
                 ret = None
 
                 ppath = "/dev/rfcomm{}_tx".format(i)
                 ppath_check_ret = stat.S_ISFIFO(os.stat(ppath).st_mode)
-                print "ppath_check_ret:", ppath_check_ret
+                #print "ppath_check_ret:", ppath_check_ret
                 if ppath_check_ret:
                     pass
                 else:
@@ -114,7 +119,7 @@ def bt_write(i, args, q):
                 if txfd is None:
                     txfd = os.open(ppath, os.O_WRONLY|os.O_NONBLOCK)
                 ret = os.write(txfd, data)
-                print "txfd write done ret:", ret
+                print "txfd i {} write done ret: {}".format(i, ret)
                 
         except Exception as e:
             print "bt_write: i {} exception {}".format(i, str(e))
