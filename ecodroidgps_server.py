@@ -87,14 +87,16 @@ def read_gps(args, queues_dict):
                             for i in range(0, MAX_GPS_DATA_QUEUE_LEN/4):
                                 try:
                                     q.get_nowait()
-                                except:
+                                except Exception as e0:
                                     print("read_gps: append queue in queuesdict key {} get_nowait exception: {}".format(key, str(e)))
                         try:
                             q.put_nowait(gps_data)
-                        except:
+                        except Exception as e1:
                             print("read_gps: append queue in queuesdict key {} put_nowait exception: {}".format(key, str(e)))
-                    except Exception as e:
-                        print("read_gps: append queue in queuesdict key {} exception: {}".format(key, str(e)))
+                    except Exception as e2:
+                        type_, value_, traceback_ = sys.exc_info()
+                        exstr = str(traceback.format_exception(type_, value_, traceback_))
+                        print("read_gps: append queue in queuesdict key {} exception: {}".format(key, exstr))
 
         except Exception as e:
             print("read_gps: exception: "+str(e))
@@ -200,7 +202,7 @@ class Profile(dbus.service.Object):
             print("started reader_proc for fd {}", fd)
 
             print("starting writer_proc for fd {}", fd)
-            queue = mp.Queue(MAX_GPS_DATA_QUEUE_LEN)
+            queue = self.vars_dict["mp_manager"].Queue(MAX_GPS_DATA_QUEUE_LEN)
             self.vars_dict["gps_data_queues_dict"][fd] = queue # add new entry
             writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(queue, fd,))
             writer_proc.start()
