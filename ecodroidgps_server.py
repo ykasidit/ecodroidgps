@@ -200,7 +200,7 @@ class Profile(dbus.service.Object):
             print("started reader_proc for fd {}", fd)
 
             print("starting writer_proc for fd {}", fd)
-            queue = 
+            queue = mp.Queue(MAX_GPS_DATA_QUEUE_LEN)
             self.vars_dict["gps_data_queues_dict"][fd] = queue # add new entry
             writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(queue, fd,))
             writer_proc.start()
@@ -309,9 +309,6 @@ args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse
 
 mp_manager = mp.Manager()
 gps_data_queues_dict = mp_manager.dict()
-for i in range(args["max_bt_serial_port_count"]):
-    gps_data_queues_dict[i] = mp.Queue(MAX_GPS_DATA_QUEUE_LEN)
-
 
 args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
