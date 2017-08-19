@@ -78,9 +78,9 @@ def read_gps(args, queues_dict):
                 #print("read_gps: read gps_data:", gps_data)
                 if gps_data is None or gps_data == "":
                     raise Exception("gps chardev likely disconnected - try connect again")
-                for key, value in queues_dict.iteritems():
+                for key in queues_dict.keys():
                     try:
-                        q = value
+                        q = queues_dict[key]
                         qsize = q.qsize()
                         #print "read_gps: queue i {} q {} q.qsize() {}".format(i, q, qsize)
                         if qsize >= MAX_GPS_DATA_QUEUE_LEN/2:
@@ -98,7 +98,7 @@ def read_gps(args, queues_dict):
 
         except Exception as e:
             print("read_gps: exception: "+str(e))
-            time.sleep(1)
+            time.sleep(3)
         finally:
             if not f is None:
                 f.close()
@@ -107,13 +107,15 @@ def read_gps(args, queues_dict):
 ####### bt_spp
 
 # just keep on reading to avoid target device write buffer full issues - read data not used
-def read_fd_until_closed(fd):
+# remove from queues dict when disconnected (when has exception)
+def read_fd_until_closed(fd, gps_data_queues_dict):
+    print("read_fd_until_closed: fd {} start".format(fd))
     READ_BUFF_SIZE = 2048
     try:
         while (True):
             read = None
             readable, writable, exceptional = select.select([fd], [], [])
-            read = os.read(fd, )
+            read = os.read(fd, READ_BUFF_SIZE)
             if not read is None:
                 print("read_fd_until_closed: fd {} read data: {}".format(fd, read))
             else:
@@ -123,12 +125,20 @@ def read_fd_until_closed(fd):
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
         print("read_fd_until_closed: fd {} got exception: {}".format(fd, exstr))
+
+    # remove from queues dict when disconnected
+    try:
+        gps_data_queues_dict.pop(fd, None)
+        print("read_fd_until_closed: fd {} remove fd from gps_data_queues_dict done".format(fd))
+    except Exception as dpe:
+        print("read_fd_until_closed: fd {} remove fd from gps_data_queues_dict got exception: {}".format(fd, str(dpe)))
     
-    print("read_fd_until_closed: fd {} proc ending")
+    print("read_fd_until_closed: fd {} end".format(fd))
     return
 
 
 def write_nmea_from_queue_to_fd(queue, fd):
+    print("write_nmea_from_queue_to_fd: fd {} start".format(fd))
     try:
         while (True):
             nmea = queue.get()
@@ -139,7 +149,7 @@ def write_nmea_from_queue_to_fd(queue, fd):
         exstr = traceback.format_exception(type_, value_, traceback_)
         print("write_nmea_from_queue_to_fd: fd {} got exception: {}".format(fd, exstr))
     
-    print("write_nmea_from_queue_to_fd: fd {} proc ending")
+    print("write_nmea_from_queue_to_fd: fd {} ending".format(fd))
     return
     
 
@@ -149,7 +159,10 @@ class Profile(dbus.service.Object):
                          in_signature="", out_signature="")
     def Release(self):
         print("bt_spp: Release")
-        self.mainloop.quit()
+        try:
+            self.vars_dict["mainloop"].quit()
+        except Exception as e:
+            printlog("bt_spp: Release exception: "+str(e))
                               
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="", out_signature="")
@@ -163,45 +176,46 @@ class Profile(dbus.service.Object):
                               
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="oha{sv}", out_signature="")
-    def NewConnection(self, path, fd, properties):
-
-        global g_srcfd
-        global g_targetfd
-
-        print("bt_spp: NewConnection({}, fd: {})".format(path, fd))
-
-        this_fd = fd.take()
-        self.fds.append(this_fd)        
-        print("type fd", type(fd))
-        print("this_fd", str(this_fd))
-
+    def NewConnection(self, path, dbus_fd, properties):
+        
         try:
-            for key in properties.keys():
-                print("property: key:",key, "value:", properties[key])
-                if key == "Version" or key == "Features":
-                    print("  %s = 0x%04x" % (key, properties[key]))
-                else:
-                    print("  %s = %s" % (key, properties[key]))
+            fd = dbus_fd.take()                
+
+            print("bt_spp: NewConnection({}, fd: {})".format(path, fd))
+
+
+            try:
+                for key in properties.keys():
+                    print("property: key:",key, "value:", properties[key])
+                    if key == "Version" or key == "Features":
+                        print("  %s = 0x%04x" % (key, properties[key]))
+                    else:
+                        print("  %s = %s" % (key, properties[key]))
+            except Exception as e:
+                print("WARNING: read new connection property exception: ", str(e))
+
+            print("starting reader_proc for fd {}", fd)
+            reader_proc = mp.Process(target=read_fd_until_closed, args=(fd,self.vars_dict["gps_data_queues_dict"]))
+            reader_proc.start()
+            print("started reader_proc for fd {}", fd)
+
+            print("starting writer_proc for fd {}", fd)
+            queue = 
+            self.vars_dict["gps_data_queues_dict"][fd] = queue # add new entry
+            writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(queue, fd,))
+            writer_proc.start()
+            print("started writer_proc for fd {}", fd)
+        
         except Exception as e:
-            print("WARNING: read new connection property exception: ", str(e))
-
-        reader_proc = mp.Process(target=read_fd_until_closed, args=(this_fd))
-        reader_proc.start()
-
-        queue = mp.Queue(maxsize=MAX_GPS_DATA_QUEUE_LEN)
-        self.gps_data_queues[this_fd] = queue # add new entry        
-        writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(queue, this_fd))
-        writer_proc.start()
+            type_, value_, traceback_ = sys.exc_info()
+            exstr = str(traceback.format_exception(type_, value_, traceback_))
+            print("WARNING: NewConnection() got exception:", exstr)
+                
+    vars_dict = None
     
-    gps_data_queues = None
-    gobject_main_loop = None
-    
-    def set_gps_data_queues(self, q):
-        self.gps_data_queues = q
-
-    def set_gobject_main_loop(self, goml):
-        self.gobject_main_loop = goml
-                              
+    def set_vars_dict(self, vd):
+        self.vars_dict = vd
+   
                               
 ##################
     
@@ -294,7 +308,10 @@ args = parse_cmd_args()
 args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
 
 mp_manager = mp.Manager()
-gps_data_queues = mp_manager.dict()
+gps_data_queues_dict = mp_manager.dict()
+for i in range(args["max_bt_serial_port_count"]):
+    gps_data_queues_dict[i] = mp.Queue(MAX_GPS_DATA_QUEUE_LEN)
+
 
 args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
@@ -315,12 +332,16 @@ bluez_profile_manager = dbus.Interface(
 )
 edgps_dbus_path = "/ecodroidgps"
 bt_spp = Profile(system_bus, edgps_dbus_path)
-bt_spp.set_gps_data_queues(gps_data_queues)
 gobject_main_loop = gobject.MainLoop()
-bt_spp.set_gobject_main_loop(gobject_main_loop)
+vars_for_bt_spp = {}
+vars_for_bt_spp["gps_data_queues_dict"] = gps_data_queues_dict
+vars_for_bt_spp["gobject_main_loop"] = gobject_main_loop
+vars_for_bt_spp["mp_manager"] = mp_manager
+bt_spp.set_vars_dict(vars_for_bt_spp)
 
 print "starting ecodroidgps_server main loop - gps chardev:", args["gps_chardev"]
-gps_reader_proc = mp.Process(target=read_gps, args=(args, gps_data_queues) )
+gps_reader_proc = mp.Process(target=read_gps, args=(args, gps_data_queues_dict) )
+gps_reader_proc.start()
 
 bluez_register_profile_options = {
     "AutoConnect": True,
