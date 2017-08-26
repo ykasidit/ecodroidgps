@@ -28,9 +28,8 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
 
-                #print("read_gps: pre enter for write line: len(q_list_used_indexes):", len(q_list_used_indexes))
                 for q_index in q_list_used_indexes:
-                    print("read_gps: write line to q_index:", q_index)
+                    #print("read_gps: write line to q_index:", q_index)
                     try:
                         q = q_list[q_index]
                         qsize = q.qsize()
