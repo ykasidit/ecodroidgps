@@ -13,6 +13,8 @@ import dbus.mainloop.glib
 import edg_gps_reader
 import bt_spp_profile
 
+infostr = "EcoDroidLink Copyright (c) 2017 Kasidit Yusuf. All rights reserved."
+
 """
 read input from gps chardev, keep at a central var, send input to each subprocess's tx pipe
 
@@ -43,7 +45,7 @@ def printlog(*s):
 
 
 def parse_cmd_args():
-    parser = argparse.ArgumentParser(#description=infostr, usage=usagestr,
+    parser = argparse.ArgumentParser(description=infostr,# usage=usagestr,
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
@@ -146,6 +148,8 @@ def prepare_bt_device(args):
 
     
 ############### MAIN
+
+print infostr
 
 args = parse_cmd_args()
 args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
