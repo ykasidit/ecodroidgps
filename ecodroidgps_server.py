@@ -332,7 +332,7 @@ args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse
 mp_manager = mp.Manager()
 q_list = [] # list of mp.Queue each holding nmea lines for a specific bt dev fd
 q_list_used_indexes = mp_manager.list() # list of indices of used queues in above q_list
-MAX_N_GPS_DATAQUEUES = 1
+MAX_N_GPS_DATAQUEUES = 100
 for i in range(MAX_N_GPS_DATAQUEUES):
     q_list.append(mp.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
 

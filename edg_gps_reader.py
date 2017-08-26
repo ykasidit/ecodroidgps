@@ -21,6 +21,9 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
             print("read_gps: opening gps chardev:"+gps_chardev_path)
             f = open(gps_chardev_path, "r")
 
+            prev_n_connected_dev = 0
+            prev_n_connected_dev_put_successfully = 0
+
             while True:
 
                 gps_data = f.readline()
@@ -28,7 +31,10 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
 
+                n_connected_dev = 0
+                n_connected_dev_put_successfully = 0
                 for q_index in q_list_used_indexes:
+                    n_connected_dev += 1
                     #print("read_gps: write line to q_index:", q_index)
                     try:
                         q = q_list[q_index]
@@ -42,12 +48,19 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
                                     print("read_gps: append queue in q_list q_index {} get_nowait exception: {}".format(q_index, str(e)))
                         try:
                             q.put_nowait(gps_data)
+                            n_connected_dev_put_successfully += 1
                         except Exception as e1:
                             print("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e)))
                     except Exception as e2:
                         type_, value_, traceback_ = sys.exc_info()
                         exstr = str(traceback.format_exception(type_, value_, traceback_))
                         print("read_gps: append queue in q_list q_index{} exception: {}".format(q_index, exstr))
+
+                if n_connected_dev != prev_n_connected_dev or n_connected_dev_put_successfully != prev_n_connected_dev_put_successfully:
+                    print("read_gps: n_connected_dev {} n_connected_dev_put_successfully {}".format(n_connected_dev, n_connected_dev_put_successfully))
+                    prev_n_connected_dev = n_connected_dev
+                    prev_n_connected_dev_put_successfully = n_connected_dev_put_successfully
+
 
 
         except Exception as e:
