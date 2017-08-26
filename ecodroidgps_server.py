@@ -13,7 +13,7 @@ import dbus.mainloop.glib
 import edg_gps_reader
 import bt_spp_profile
 
-infostr = "EcoDroidGPS Copyright (c) 2017 Kasidit Yusuf. All rights reserved.\nEcoDroidGPS 'Bluetooth GPS' devices are available at: www.ClearEvo.com"
+infostr = "EcoDroidGPS v1.0 Copyright (c) 2017 Kasidit Yusuf. All rights reserved.\nEcoDroidGPS 'Bluetooth GPS' devices are available at: www.ClearEvo.com"
 
 """
 read input from gps chardev, keep at a central var, send input to each subprocess's tx pipe
