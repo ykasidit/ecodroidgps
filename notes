@@ -1,3 +1,80 @@
+cython cross compile
+--------------------
+
+https://stackoverflow.com/questions/38388812/using-cython-to-cross-compile-project-from-intel-ubuntu-to-arm
+
+Architecture dependent libraries and headers files are needed for cross compiling.
+
+When testing if python3.5-dev package and others could be installed after dpkg --add-architecture armhf and apt-get update (after some modification to sources.list), the result was basically.
+
+python3.5-dev:armhf : Depends: python3.5:armhf (= 3.5.1-10) but it is not going to be installed
+apt-get install python3.5:armhf is something that doesn't work, see
+
+The existing proposals allow for the co-installation of libraries and headers for different architectures, but not (yet) binaries.
+One possible solution that does not require "full" virtual machine is provided by QEMU and chroot. A suitable directory for chroot can be created by debootstrap command. After creation, schroot can give access to that environment.
+
+Substitute <DIRECTORY> and <USER> in the following commands:
+
+apt-get install -y debootstrap qemu-user-static binfmt-support schroot
+debootstrap --arch=armhf --foreign --include=gcc,g++,python3.5-dev xenial <DIRECTORY>
+cp /usr/bin/qemu-arm-static <DIRECTORY>/usr/bin
+chroot <DIRECTORY>
+/debootstrap/debootstrap --second-stage
+echo "deb http://ports.ubuntu.com/ubuntu-ports xenial universe" >> /etc/apt/sources.list
+echo "deb http://ports.ubuntu.com/ubuntu-ports xenial multiverse" >> /etc/apt/sources.list
+apt-get update
+apt-get install -y cython cython3
+exit
+cat <<END > /etc/schroot/chroot.d/xenial-armhf
+[xenial-armhf]
+description=Ubuntu xenial armhf
+type=directory
+directory=/home/xenial-armhf
+groups=sbuild,root
+root-groups=sbuild,root
+users=root,<USER>
+END
+The environment should be accessible by
+
+schroot -c chroot:xenial-armhf
+and for root user session (the user must be in a group listed in root-groups) ,
+
+schroot -c chroot:xenial-armhf -u root
+After this, it is also possible to cross compile a cython module:
+
+hello.pyx:
+
+print("hello world")
+compiling (python3.5-config --cflags and python3.5-config --libs in chroot for options, note -fPIC):
+
+cython hello.pyx
+arm-linux-gnueabihf-gcc --sysroot <DIRECTORY> -I/usr/include/python3.5m -I/usr/include/python3.5m  -Wno-unused-result -Wsign-compare -g -fstack-protector-strong -Wformat -Werror=format-security  -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC -c hello.c
+arm-linux-gnueabihf-gcc --shared --sysroot <DIRECTORY> -lpython3.5m -lpthread -ldl  -lutil -lm hello.o -o hello.so
+The module can be then tested
+
+schroot -c chroot:xenial-armhf
+python3
+import hello
+Cross compiling cython based python modules may also work. With setup.py
+
+from distutils.core import setup
+from distutils.extension import Extension
+from Cython.Distutils import build_ext
+
+import os
+
+os.environ['CC'] = 'arm-linux-gnueabihf-gcc'
+os.environ['LDSHARED'] = 'arm-linux-gnueabihf-gcc -shared'
+sysroot_args=['--sysroot', '/path/to/xenial-armhf']
+
+setup(cmdclass = {'build_ext': build_ext},
+      ext_modules= [ Extension("hello", ["hello.pyx"],
+                                extra_compile_args=sysroot_args,
+                                extra_link_args=sysroot_args) ])
+Building a simple hello world module was possible this way. The file name for the module was wrong, in this case it was hello.cpython-35m-x86_64-linux-gnu.so. After renaming it as hello.so it was possible to import it.
+
+---
+
 real bt gps
 ===========
 

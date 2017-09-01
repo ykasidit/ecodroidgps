@@ -12,6 +12,14 @@ import gobject
 import dbus.mainloop.glib
 import edg_gps_reader
 import bt_spp_profile
+import fcntl, socket, struct
+import hashlib
+
+
+def getHwAddr(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
+    return ':'.join(['%02x' % ord(char) for char in info[18:24]])
 
 infostr = "EcoDroidGPS v1.1 Copyright (c) 2017 Kasidit Yusuf. All rights reserved.\nEcoDroidGPS 'Bluetooth GPS' devices are available at: www.ClearEvo.com"
 
@@ -32,15 +40,27 @@ def get_module_path():
         os.path.join(os.getcwd(), os.path.dirname(__file__))
     )
 
-logger = logging.getLogger('ecodroidgps_server')
-logger.setLevel(logging.DEBUG)
-handler = logging.handlers.SysLogHandler(address = '/dev/log')
-logger.addHandler(handler)
+g_logger = None
+def init_logger():
+    global g_logger
 
+    try:
+        g_logger = logging.getLogger('ecodroidgps_server')
+        g_logger.setLevel(logging.DEBUG)
+        handler = logging.handlers.SysLogHandler(address = '/dev/log')
+        g_logger.addHandler(handler)
+    except Exception as e:
+        print "WARNING: init_logger() exception: ", str(e)
 
+init_logger()
+        
 def printlog(*s):
+    global g_logger
     s = str(s)
-    logger.info(s)
+    try:
+        g_logger.info(s)
+    except:
+        pass
     print(s)
 
 
@@ -146,10 +166,52 @@ def prepare_bt_device(args):
     return
 
 
+def check_lic(mac_addr):
+    print "check_lic: mac_addr:", mac_addr
+    shaer = hashlib.sha1()
+    shaer.update("edg")
+    shaer.update(mac_addr+":edg")
+    shaer.update("edg")
+    this_sha = shaer.hexdigest()
+    print "this_sha:", this_sha
+    licfp = os.path.join(get_module_path(), "edg_0.lic")
+    lic_pass = False
+    with open(licfp, "r") as f:        
+        lic_lines = f.readlines()
+        i_lic_lines = range(len(lic_lines))
+        for i in i_lic_lines:
+            if i % 2 == 1:
+                if lic_lines[i].strip() == this_sha:
+                    lic_pass = True
+
+    if lic_pass:
+        print "lic ok"
+        return 0
+    else:
+        print "INVALID LICENSE - ABORT"
+        exit(-3)
+        return -3
+    
     
 ############### MAIN
 
 print infostr
+
+mac_addr = None
+try:
+    mac_addr = getHwAddr("eth0")
+except:
+    mac_addr = getHwAddr("wlp4s0")
+
+if mac_addr is None:
+    print "INVALID: failed to get mac addr"
+    exit(2)
+
+ret = check_lic(mac_addr)
+if ret == 0:
+    pass
+else:
+    exit(ret)
 
 args = parse_cmd_args()
 args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
