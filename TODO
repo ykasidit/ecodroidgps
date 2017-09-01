@@ -8,9 +8,13 @@ Set Dev Class succeeded. Class 0x010000
 hci0 class of device changed: 0x010000
 [mgmt]# 
 
-* autostart
+* autostart make depend on bluetooth service - add exec stop to
+   killall python
 
 * handle bt usb removed during connect - must be able to handle
+
+* debian rpi read-only mods
+
 
 * license with opi device ids
    
