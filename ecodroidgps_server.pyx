@@ -167,7 +167,7 @@ def prepare_bt_device(args):
 
 
 def check_lic(mac_addr):
-    print "check_lic: mac_addr:", mac_addr
+    print "stage0 mac_addr:", mac_addr
     shaer = hashlib.sha1()
     shaer.update("edg")
     shaer.update(mac_addr+":edg")
@@ -185,10 +185,10 @@ def check_lic(mac_addr):
                     lic_pass = True
 
     if lic_pass:
-        print "lic ok"
+        print "startup stage0 check ok"
         return 0
     else:
-        print "INVALID LICENSE - ABORT"
+        print "startup stage0 check failed code: -3 - please contact or get a new EcoDroidGPS unit at www.ClearEvo.com"
         exit(-3)
         return -3
     
