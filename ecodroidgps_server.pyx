@@ -173,7 +173,7 @@ def check_lic(mac_addr):
     shaer.update(mac_addr+":edg")
     shaer.update("edg")
     this_sha = shaer.hexdigest()
-    print "this_sha:", this_sha
+    #print "this_sha:", this_sha
     licfp = os.path.join(get_module_path(), "edg_0.lic")
     lic_pass = False
     with open(licfp, "r") as f:        
@@ -204,7 +204,7 @@ except:
     mac_addr = getHwAddr("wlp4s0")
 
 if mac_addr is None:
-    print "INVALID: failed to get mac addr"
+    print "INVALID: failed to get mac_addr"
     exit(2)
 
 ret = check_lic(mac_addr)
