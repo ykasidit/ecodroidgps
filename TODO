@@ -1,4 +1,4 @@
-* auto set bt class:
+# TODO - use mgmt api directly to adj class
   [mgmt]# add-uuid 1101 1
 Add UUID succeeded. Class 0x011000
 [mgmt]# class

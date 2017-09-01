@@ -89,7 +89,8 @@ def parse_cmd_args():
 def call_bash_cmd(cmd):
     #cmd = get_bash_cmdlist(cmd)
     printlog("call cmd:", cmd)
-    return subprocess.call(cmd, shell=True, executable='/bin/bash')
+    #return subprocess.call(cmd, shell=True, executable='/bin/bash')
+    return subprocess.call(["/bin/bash","-c",cmd], shell=False)
 
 
 def popen_bash_cmd(cmd):
@@ -152,10 +153,7 @@ def prepare_bt_device(args):
     if ret != 0:
         raise Exception("failed to prepare bt device: cmd failed: "+cmd)
 
-    # make sure bluez-5.46 is in folder next to this folder
-    ret = call_bash_cmd("(sleep 1 ; echo 'add-uuid 1101 1'; sleep 1; echo 'class 0 0'; sleep 1; echo exit;) | {}/../bluez-*/tools/btmgmt".format(get_module_path()))
-    if ret != 0:
-        print("WARNING: run btmgmt set dev class to positioning failed: cmd: "+cmd)
+    # TODO - use mgmt api directly to adj class
 
     # start the auto-pair agent
     kill_popen_proc(g_prev_edl_agent_proc)
