@@ -15,6 +15,8 @@ import bt_spp_profile
 import fcntl, socket, struct
 import hashlib
 
+# make sure bluez-5.46 is in folder next to this folder
+
 
 def getHwAddr(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -150,6 +152,11 @@ def prepare_bt_device(args):
     if ret != 0:
         raise Exception("failed to prepare bt device: cmd failed: "+cmd)
 
+    # make sure bluez-5.46 is in folder next to this folder
+    ret = call_bash_cmd("(sleep 1 ; echo 'add-uuid 1101 1'; sleep 1; echo 'class 0 0'; sleep 1; echo exit;) | {}/../bluez-*/tools/btmgmt".format(get_module_path()))
+    if ret != 0:
+        print("WARNING: run btmgmt set dev class to positioning failed: cmd: "+cmd)
+
     # start the auto-pair agent
     kill_popen_proc(g_prev_edl_agent_proc)
     cmd = os.path.join(
@@ -166,7 +173,7 @@ def prepare_bt_device(args):
     return
 
 
-def check_lic(mac_addr):
+def stage0_check(mac_addr):
     print "stage0 mac_addr:", mac_addr
     shaer = hashlib.sha1()
     shaer.update("edg")
@@ -207,7 +214,7 @@ if mac_addr is None:
     print "INVALID: failed to get mac_addr"
     exit(2)
 
-ret = check_lic(mac_addr)
+ret = stage0_check(mac_addr)
 if ret == 0:
     pass
 else:
@@ -231,7 +238,8 @@ gps_data_queues_dict = {
 for k in gps_data_queues_dict:
     print("gps_data_queues_dict key: {} valtype {}".format(k, type(gps_data_queues_dict[k])))
 
-args["bluez_compassion_path"] = os.path.join(get_module_path(), "bluez-compassion")
+# clone/put bluez_compassion in folder next to this folder
+args["bluez_compassion_path"] = os.path.join(get_module_path(), ".." ,"bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
     exit(-1)

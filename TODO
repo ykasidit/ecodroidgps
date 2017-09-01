@@ -1,4 +1,4 @@
-* bt class:
+* auto set bt class:
   [mgmt]# add-uuid 1101 1
 Add UUID succeeded. Class 0x011000
 [mgmt]# class
@@ -7,8 +7,6 @@ Usage: class <major> <minor>
 Set Dev Class succeeded. Class 0x010000
 hci0 class of device changed: 0x010000
 [mgmt]# 
-
-* license
 
 * autostart
 
