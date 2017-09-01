@@ -1,7 +1,18 @@
-* handle bt usb removed during connect - must be able to handle
-* handle gps usb removed
+* bt class:
+  [mgmt]# add-uuid 1101 1
+Add UUID succeeded. Class 0x011000
+[mgmt]# class
+Usage: class <major> <minor>
+[mgmt]# class 0 0
+Set Dev Class succeeded. Class 0x010000
+hci0 class of device changed: 0x010000
+[mgmt]# 
 
-* cython
+* license
+
+* autostart
+
+* handle bt usb removed during connect - must be able to handle
 
 * license with opi device ids
    
