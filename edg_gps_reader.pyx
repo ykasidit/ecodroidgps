@@ -49,18 +49,20 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                     try:
                         q = q_list[q_index]
                         qsize = q.qsize()
-                        #print "read_gps: queue i {} q {} q.qsize() {}".format(i, q, qsize)
+                        #print "read_gps: q_index {} q {} q.qsize() {}".format(q_index, q, qsize)
                         if qsize >= MAX_GPS_DATA_QUEUE_LEN/2:
+                            #print "read_gps: q_index {} q {} q.qsize() {} clearing...".format(q_index, q, qsize)
                             for i in range(0, MAX_GPS_DATA_QUEUE_LEN/4):
                                 try:
                                     q.get_nowait()
                                 except Exception as e0:
-                                    print("read_gps: append queue in q_list q_index {} get_nowait exception: {}".format(q_index, str(e)))
+                                    print("read_gps: append queue in q_list q_index {} get_nowait exception: {}".format(q_index, str(e0)))
                         try:
+                            #print "read_gps: q_index {} q {} q.qsize() {} putting...".format(q_index, q, qsize)
                             q.put_nowait(gps_data)
                             n_connected_dev_put_successfully += 1
                         except Exception as e1:
-                            print("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e)))
+                            print("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e1)))
                     except Exception as e2:
                         type_, value_, traceback_ = sys.exc_info()
                         exstr = str(traceback.format_exception(type_, value_, traceback_))

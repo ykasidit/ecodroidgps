@@ -66,7 +66,10 @@ def write_nmea_from_queue_to_fd(queue, fd):
                     fd))
                 break
             readable, writable, exceptional = select.select([], [fd], [])
-            os.write(fd, nmea)
+
+            if isinstance(nmea, str): # handle: TypeError: must be string or buffer, not int
+                os.write(fd, nmea)
+                
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)

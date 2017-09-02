@@ -244,6 +244,7 @@ if not os.path.isdir(args["bluez_compassion_path"]):
 
 prepare_bt_device(args)
 printlog("prepare_bt_device done...")
+
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 system_bus = dbus.SystemBus()
 bluez_profile_manager = dbus.Interface(
@@ -278,6 +279,7 @@ serial_port_profile_uuid = "0x1101"
 
 bluez_profile_manager.RegisterProfile(edgps_dbus_path, serial_port_profile_uuid, bluez_register_profile_options)
 print "ecodroidgps bluetooth profile registered - waiting for incoming connections..."
+
 gobject_main_loop.run()
 
 print("ecodroidgps_server - terminating")

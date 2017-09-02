@@ -1,5 +1,9 @@
-* test overnight must work on pc
 * test overnight must work on pi
+
+* which subproc is using high cpu? try remove each:
+  - see https://jameswestby.net/weblog/tech/14-caution-python-multiprocessing-and-glib-dont-mix.html
+* cython to reduce cpu usage. maybe stty to config then read directly from fd
+* do py profiling
 
 * disable modem manager
 
