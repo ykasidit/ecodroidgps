@@ -19,8 +19,17 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
 
         try:
 
-            print("read_gps: opening gps chardev:"+gps_chardev_path)
-            f = serial.Serial(gps_chardev_path, timeout=3)
+
+            for acm in range(0,9):
+                dev = gps_chardev_path + str(acm)
+                print("read_gps: opening gps chardev:"+dev)
+                try:
+                    f = serial.Serial(dev, timeout=3)
+                    print("read_gps: opening gps chardev:"+dev+" success")
+                    break
+                except:
+                    print("read_gps: opening gps chardev:"+dev+" failed - retry next acm number")
+                    continue
 
             prev_n_connected_dev = 0
             prev_n_connected_dev_put_successfully = 0
@@ -28,7 +37,7 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
             while True:
 
                 gps_data = f.readline()
-                print("read_gps: read gps_data:", gps_data)
+                # print("read_gps: read gps_data:", gps_data)
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
 
