@@ -71,8 +71,8 @@ def parse_cmd_args():
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('--gps_chardev',
-                        help="character device path like /dev/ttyACM0", required=True)
+    parser.add_argument('--gps_chardev_prefix',
+                        help="character device path like /dev/ttyACM - we will auto try all from ACM0 to ACM9 automatically", required=True)
 
     parser.add_argument('--max_bt_serial_port_count',
                         help="set number of max bt serial ports to create",
@@ -261,10 +261,10 @@ vars_for_bt_spp["gps_data_queues_dict"] = gps_data_queues_dict
 vars_for_bt_spp["gobject_main_loop"] = gobject_main_loop
 bt_spp.set_vars_dict(vars_for_bt_spp)
 
-print "starting ecodroidgps_server main loop - gps chardev:", args["gps_chardev"]
+print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
 gps_reader_proc = mp.Process(
     target=edg_gps_reader.read_gps,
-    args=(args["gps_chardev"], gps_data_queues_dict)
+    args=(args["gps_chardev_prefix"], gps_data_queues_dict)
 )
 gps_reader_proc.start()
 

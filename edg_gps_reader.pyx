@@ -6,7 +6,7 @@ import serial
 MAX_GPS_DATA_QUEUE_LEN = 100
 
 
-def read_gps(gps_chardev_path, gps_data_queues_dict):
+def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
     print "read_gps: start"
 
@@ -20,8 +20,8 @@ def read_gps(gps_chardev_path, gps_data_queues_dict):
         try:
 
 
-            for acm in range(0,9):
-                dev = gps_chardev_path + str(acm)
+            for acm in range(0, 10):
+                dev = gps_chardev_prefix + str(acm)
                 print("read_gps: opening gps chardev:"+dev)
                 try:
                     f = serial.Serial(dev, timeout=3)
