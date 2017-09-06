@@ -7,13 +7,14 @@ import os
 import logging.handlers
 import argparse
 import traceback
-import multiprocessing as mp
+import multiprocessing
 import gobject
 import dbus.mainloop.glib
 import edg_gps_reader
 import bt_spp_profile
 import fcntl, socket, struct
 import hashlib
+import ctypes
 
 # make sure bluez-5.46 is in folder next to this folder
 
@@ -221,16 +222,19 @@ else:
 args = parse_cmd_args()
 args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
 
-mp_manager = mp.Manager()
-q_list = [] # list of mp.Queue each holding nmea lines for a specific bt dev fd
-q_list_used_indexes = mp_manager.list() # list of indices of used queues in above q_list
-MAX_N_GPS_DATAQUEUES = 100
+
+q_list = [] # list of multiprocessing.Queue each holding nmea lines for a specific bt dev fd
+q_list_used_indexes_mask = multiprocessing.RawValue(ctypes.c_uint64, 0)
+q_list_used_indexes_mask_mutex = multiprocessing.Lock()
+
+MAX_N_GPS_DATAQUEUES = 64
 for i in range(MAX_N_GPS_DATAQUEUES):
-    q_list.append(mp.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
+    q_list.append(multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
 
 gps_data_queues_dict = {
     "q_list":q_list,
-    "q_list_used_indexes":q_list_used_indexes
+    "q_list_used_indexes_mask":q_list_used_indexes_mask,
+    "q_list_used_indexes_mask_mutex":q_list_used_indexes_mask_mutex,
 }
 
 for k in gps_data_queues_dict:
@@ -263,7 +267,7 @@ vars_for_bt_spp["gobject_main_loop"] = gobject_main_loop
 bt_spp.set_vars_dict(vars_for_bt_spp)
 
 print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
-gps_reader_proc = mp.Process(
+gps_reader_proc = multiprocessing.Process(
     target=edg_gps_reader.read_gps,
     args=(args["gps_chardev_prefix"], gps_data_queues_dict)
 )

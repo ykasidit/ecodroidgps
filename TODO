@@ -1,7 +1,6 @@
-* try threads instead of proc so can access same list of dev
-  * use locks to control list of connected dev r/w
-  * try not use multiprocessing lib - cpu better?
-  * put more cdef types / cython code
+* gps reader use q_list_used_indexes_mask
+* bt profile use q_list_used_indexes_mask
+* bt reader/write use q_list_used_indexes_mask
 
 * which subproc is using high cpu? try remove each:
   - see https://jameswestby.net/weblog/tech/14-caution-python-multiprocessing-and-glib-dont-mix.html
