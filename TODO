@@ -1,4 +1,9 @@
 * gps reader use q_list_used_indexes_mask
+  * test if rawvalue changed afterwards, does the copied value change
+too? (to know if .value is a ptr ref or a copy of the value as we
+want)
+
+
 * bt profile use q_list_used_indexes_mask
 * bt reader/write use q_list_used_indexes_mask
 
