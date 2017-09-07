@@ -75,11 +75,6 @@ def parse_cmd_args():
     parser.add_argument('--gps_chardev_prefix',
                         help="character device path like /dev/ttyACM - we will auto try all from ACM0 to ACM9 automatically", required=True)
 
-    parser.add_argument('--max_bt_serial_port_count',
-                        help="set number of max bt serial ports to create",
-                        required=False,
-                        default=7)
-
     return vars(parser.parse_args())
 
 
@@ -169,6 +164,7 @@ def prepare_bt_device(args):
         edl_agent_poll_ret = g_prev_edl_agent_proc.poll()
         printlog("NOTE: edl_agent proc poll() (None means good - it is running) ret:", edl_agent_poll_ret)
 
+    printlog("prepare_bt_device done...")
     return
 
 
@@ -197,8 +193,57 @@ def stage0_check(mac_addr):
         print "startup stage0 check failed code: -3 - please contact or get a new EcoDroidGPS unit at www.ClearEvo.com"
         exit(-3)
         return -3
+
     
+def register_bluez_dbus_profile(shared_gps_data_queues_dict):
     
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    system_bus = dbus.SystemBus()
+    bluez_profile_manager = dbus.Interface(
+        system_bus.get_object("org.bluez",
+                       "/org/bluez"
+        )
+        ,
+        "org.bluez.ProfileManager1"
+    )
+    edgps_dbus_path = "/ecodroidgps"
+    bt_spp = bt_spp_profile.Profile(system_bus, edgps_dbus_path)
+    gobject_main_loop = gobject.MainLoop()
+    vars_for_bt_spp = {}
+    vars_for_bt_spp["shared_gps_data_queues_dict"] = shared_gps_data_queues_dict
+    vars_for_bt_spp["gobject_main_loop"] = gobject_main_loop
+    bt_spp.set_vars_dict(vars_for_bt_spp)
+
+    bluez_register_profile_options = {
+        "AutoConnect": True,
+        "Name": "EcoDroidGPS Serial Port",
+        "Role": "server",
+        "Channel": dbus.UInt16(1)
+    }
+    serial_port_profile_uuid = "0x1101"
+
+    bluez_profile_manager.RegisterProfile(edgps_dbus_path, serial_port_profile_uuid, bluez_register_profile_options)
+    print "ecodroidgps bluetooth profile registered - waiting for incoming connections..."
+    
+    return gobject_main_loop
+
+
+def alloc_gps_data_queues_dict():    
+    q_list = [] # list of multiprocessing.Queue each holding nmea lines for a specific bt dev fd
+    q_list_used_indexes_mask = multiprocessing.RawValue(ctypes.c_uint32, 0)
+    q_list_used_indexes_mask_mutex = multiprocessing.Lock()
+
+    MAX_N_GPS_DATAQUEUES = 64
+    for i in range(MAX_N_GPS_DATAQUEUES):
+        q_list.append(multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
+
+    return {
+        "q_list":q_list,
+        "q_list_used_indexes_mask":q_list_used_indexes_mask,
+        "q_list_used_indexes_mask_mutex":q_list_used_indexes_mask_mutex,
+    }
+
+
 ############### MAIN
 
 print infostr
@@ -220,25 +265,8 @@ else:
     exit(ret)
 
 args = parse_cmd_args()
-args["max_bt_serial_port_count"] = int(args["max_bt_serial_port_count"]) # parse to int
 
-
-q_list = [] # list of multiprocessing.Queue each holding nmea lines for a specific bt dev fd
-q_list_used_indexes_mask = multiprocessing.RawValue(ctypes.c_uint64, 0)
-q_list_used_indexes_mask_mutex = multiprocessing.Lock()
-
-MAX_N_GPS_DATAQUEUES = 64
-for i in range(MAX_N_GPS_DATAQUEUES):
-    q_list.append(multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
-
-gps_data_queues_dict = {
-    "q_list":q_list,
-    "q_list_used_indexes_mask":q_list_used_indexes_mask,
-    "q_list_used_indexes_mask_mutex":q_list_used_indexes_mask_mutex,
-}
-
-for k in gps_data_queues_dict:
-    print("gps_data_queues_dict key: {} valtype {}".format(k, type(gps_data_queues_dict[k])))
+shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
 
 # clone/put bluez_compassion in folder next to this folder
 args["bluez_compassion_path"] = os.path.join(get_module_path(), ".." ,"bluez-compassion")
@@ -247,42 +275,15 @@ if not os.path.isdir(args["bluez_compassion_path"]):
     exit(-1)
 
 prepare_bt_device(args)
-printlog("prepare_bt_device done...")
 
-dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-system_bus = dbus.SystemBus()
-bluez_profile_manager = dbus.Interface(
-    system_bus.get_object("org.bluez",
-                   "/org/bluez"
-    )
-    ,
-    "org.bluez.ProfileManager1"
-)
-edgps_dbus_path = "/ecodroidgps"
-bt_spp = bt_spp_profile.Profile(system_bus, edgps_dbus_path)
-gobject_main_loop = gobject.MainLoop()
-vars_for_bt_spp = {}
-vars_for_bt_spp["gps_data_queues_dict"] = gps_data_queues_dict
-vars_for_bt_spp["gobject_main_loop"] = gobject_main_loop
-bt_spp.set_vars_dict(vars_for_bt_spp)
+gobject_main_loop = register_bluez_dbus_profile(shared_gps_data_queues_dict)
 
 print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
 gps_reader_proc = multiprocessing.Process(
     target=edg_gps_reader.read_gps,
-    args=(args["gps_chardev_prefix"], gps_data_queues_dict)
+    args=(args["gps_chardev_prefix"], shared_gps_data_queues_dict)
 )
 gps_reader_proc.start()
-
-bluez_register_profile_options = {
-    "AutoConnect": True,
-    "Name": "EcoDroidGPS Serial Port",
-    "Role": "server",
-    "Channel": dbus.UInt16(1)
-}
-serial_port_profile_uuid = "0x1101"
-
-bluez_profile_manager.RegisterProfile(edgps_dbus_path, serial_port_profile_uuid, bluez_register_profile_options)
-print "ecodroidgps bluetooth profile registered - waiting for incoming connections..."
 
 gobject_main_loop.run()
 

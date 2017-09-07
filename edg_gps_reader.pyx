@@ -3,22 +3,9 @@ import traceback
 import sys
 import serial
 import math
+import edg_utils
 
 MAX_GPS_DATA_QUEUE_LEN = 100
-
-# https://stackoverflow.com/questions/8898807/pythonic-way-to-iterate-over-bits-of-integer
-def bits(n):
-    while n:
-        b = n & (~n+1)
-        yield b
-        n ^= b
-        
-        
-def get_on_bit_offset_list(val):
-    ret = []
-    for b in bits(val):
-        ret.append(int(math.log(b,2))) # b is value, we want bit offset
-    return ret
 
 
 def read_gps(gps_chardev_prefix, gps_data_queues_dict):
@@ -63,8 +50,8 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 q_list_used_indexes_mask_mutex.acquire()
                 used_mask = q_list_used_indexes_mask.value
                 q_list_used_indexes_mask_mutex.release()
-
-                q_list_used_indexes = get_on_bit_offset_list(used_mask)
+                q_list_used_indexes = edg_utils.get_on_bit_offset_list(used_mask)
+                
                 print "q_list_used_indexes:", q_list_used_indexes
                 
                 for q_index in q_list_used_indexes:

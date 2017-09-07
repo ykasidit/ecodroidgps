@@ -16,13 +16,13 @@ class Profile(dbus.service.Object):
 
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="o", out_signature="")
-    def RequestDisconnection(self, path):
+    def RequestDisconnection(self, device):
         bt_spp_funcs.on_req_disconnection(self, path)
 
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="oha{sv}", out_signature="")
-    def NewConnection(self, path, dbus_fd, properties):
-        bt_spp_funcs.on_new_connection(self, path, dbus_fd, properties)
+    def NewConnection(self, device, dbus_fd, properties):
+        bt_spp_funcs.on_new_connection(self, device, dbus_fd, properties)
 
     vars_dict = None
 

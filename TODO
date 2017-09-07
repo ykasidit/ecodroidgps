@@ -1,7 +1,18 @@
+* use rawarray to store list of used VS use pipes (in pipes queue) per
+subproc to read nmea into its own queue
+
+* use sock instead of fd
+* exception in reader/writer/starter - after sock.close() always send
+   bt disc (maybe at hci level) to target dev
+
+* clone bluez git and maybe modify/host it on github to disc device on
+   fd/sock close
+
 * gps reader use q_list_used_indexes_mask
   * test if rawvalue changed afterwards, does the copied value change
 too? (to know if .value is a ptr ref or a copy of the value as we
 want)
+  * test exception on start writer - check cleanup exception code working
 
 
 * bt profile use q_list_used_indexes_mask
