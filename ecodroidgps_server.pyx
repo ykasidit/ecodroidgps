@@ -139,6 +139,7 @@ def prepare_bt_device(args):
     if ret != 0:
         raise Exception("failed to prepare bt device: cmd failed: "+cmd)
 
+    # **NOTE** although it returns 1 but it doesnt work in most cases - need to call it manually in terminal or in systemctl systemd service then it works
     ret = call_bash_cmd(os.path.join(edg_utils.get_module_path(), "set_class.sh"))
     print "set_class ret:", ret
 
