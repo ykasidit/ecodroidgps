@@ -13,8 +13,10 @@ send "class 0 0\n"
 
 expect "#"
 sleep 1
-send "exit\n"
-
-expect "#"
 send "help\n"
 sleep 1
+
+expect "#"
+sleep 1
+send "exit\n"
+
