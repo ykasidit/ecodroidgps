@@ -139,7 +139,8 @@ def prepare_bt_device(args):
     if ret != 0:
         raise Exception("failed to prepare bt device: cmd failed: "+cmd)
 
-    # TODO - use mgmt api directly to adj class
+    ret = call_bash_cmd(os.path.join(edg_utils.get_module_path(), "set_class.sh"))
+    print "set_class ret:", ret
 
     # start the auto-pair agent
     kill_popen_proc(g_prev_edl_agent_proc)

@@ -1,8 +1,8 @@
-* test see btdevapi disc call success on opi
-
 * handle remove bt dongle and reinsert
 
-* debian rpi read-only mods
+* debian rpi read-only mode - make main partition smaller and new
+   partition to store data - mount /var/lib/bluetooth to some folder
+   in it
 
 ---
 
