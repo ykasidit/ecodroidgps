@@ -12,7 +12,7 @@ import socket
 # just keep on reading to avoid target device write buffer full issues - read data not used
 # remove q_list_index from q_list_used_indexes when done
 # add the (fd*-1) to queue when done to signal the writer process that this fd has been closed (otherwise writer blocks on get() forever or until the queue is reused and writes to old fd then exits
-def read_fd_until_closed(fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue_to_add_fd_on_close_as_signal_to_writer_proc):
+def read_fd_until_closed(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue_to_add_fd_on_close_as_signal_to_writer_proc):
     print("read_fd_until_closed: fd {} start".format(fd))
     READ_BUFF_SIZE = 2048
     try:
@@ -37,13 +37,22 @@ def read_fd_until_closed(fd, q_list_index, q_list_used_indexes_mask, q_list_used
     except Exception as ce:
         print("read_fd_until_closed: fd {}: outer os.close(fd) exception: {}".format(fd, str(ce)))
 
+        
+    # make sure target dev is disconnected
+    try:
+        disconnect_bt_dev(connected_dev_dbus_path)
+        print "read_fd_until_closed: fd {} - disconnect_bt_dev done".format(fd)
+    except Exception as cde:
+        print "read_fd_until_closed: fd {} - disconnect_bt_dev exception {}".format(fd, str(cde))
+    
+    
     # remove from queues dict when disconnected
     try:
         print("read_fd_until_closed: fd {} - remove q_list_index from q_list_used_indexes_mask start".format(fd))
         
         q_list_used_indexes_mask_mutex.acquire()
         used_mask = q_list_used_indexes_mask.value
-        print("read_fd_until_closed: fd {} - remove bit in mask - ori used_mask type: {} val: 0x{}".format(fd, type(used_mask), format(used_mask, '16x')))
+        print("read_fd_until_closed: fd {} - remove bit in mask - ori used_mask type: {} val: 0x{}".format(fd, type(used_mask), format(used_mask, '016x')))
         used_mask ^= long(math.pow(2, q_list_index)) # set the bit to 0
         q_list_used_indexes_mask.value = used_mask
         print("read_fd_until_closed: fd {} - remove bit in mask - new q_list_used_indexes_mask.value type: {} val: 0x{}".format(fd, type(q_list_used_indexes_mask.value), format(q_list_used_indexes_mask.value, '016x')))
@@ -53,6 +62,7 @@ def read_fd_until_closed(fd, q_list_index, q_list_used_indexes_mask, q_list_used
     except Exception as dpe:
         print("read_fd_until_closed: fd {} - remove q_list_index from q_list_used_indexes got exception: {}".format(fd, str(dpe)) )
 
+        
     # add fd to queue_to_add_fd_on_close_as_signal_to_writer_proc
     try:
         queue_to_add_fd_on_close_as_signal_to_writer_proc.put(fd)
@@ -60,18 +70,22 @@ def read_fd_until_closed(fd, q_list_index, q_list_used_indexes_mask, q_list_used
         "read_fd_until_closed: fd {} - add fd to queue_to_add_fd_on_close_as_signal_to_writer_proc done".format(fd))
     except Exception as nfdae:
         print(
-        "read_fd_until_closed: fd {} - add fd to queue_to_add_fd_on_close_as_signal_to_writer_proc exception:".format(
+        "read_fd_until_closed: fd {} - add fd to queue_to_add_fd_on_close_as_signal_to_writer_proc exception: {}".format(
             fd, str(nfdae)))
+
 
     print("read_fd_until_closed: fd {} end".format(fd))
     return
 
 
-def write_nmea_from_queue_to_fd(queue, fd):
+
+def write_nmea_from_queue_to_fd(connected_dev_dbus_path, queue, fd):
     print("write_nmea_from_queue_to_fd: fd {} start".format(fd))
     try:
         while True:
             nmea = queue.get()
+            if nmea is None:
+                raise Exception("write_nmea_from_queue_to_fd: got None from queue.get() - ABORT")
             if nmea == fd:
                 print(
                 "write_nmea_from_queue_to_fd: fd {} got same fd in queue means signal from reader proc that fd is closed - break now".format(
@@ -80,12 +94,14 @@ def write_nmea_from_queue_to_fd(queue, fd):
             readable, writable, exceptional = select.select([], [fd], [])
 
             if isinstance(nmea, str): # handle: TypeError: must be string or buffer, not int
+                # print "write bt dev {} nmea [{}]".format(connected_dev_dbus_path, nmea)
                 os.write(fd, nmea)
                 
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
         print("write_nmea_from_queue_to_fd: fd {} got exception: {}".format(fd, exstr))
+
 
     # try close the fd here too, in case the writer ends before the reader
     try:
@@ -94,14 +110,46 @@ def write_nmea_from_queue_to_fd(queue, fd):
     except Exception as ce:
         print("write_nmea_from_queue_to_fd: fd {}: outer os.close(fd) exception: {}".format(fd, str(ce)))
 
+    
+    # make sure target dev is disconnected
+    try:
+        disconnect_bt_dev(connected_dev_dbus_path)
+        print "write_nmea_from_queue_to_fd: fd {} - disconnect_bt_dev done".format(fd)
+    except Exception as cde:
+        print "write_nmea_from_queue_to_fd: fd {} - disconnect_bt_dev exception {}".format(fd, str(cde))
+
 
     print("write_nmea_from_queue_to_fd: fd {} end".format(fd))
     return
 
 
+def disconnect_bt_dev(connected_dev_dbus_path):
+    bluez_test_device_cmd = os.path.join(edg_utils.get_module_path(), ".." ,"bluez", "test", "test-device")
+    print "disconnect_bt_dev {} start".format(connected_dev_dbus_path)
+
+    # gen bd_addr string
+    # example dev dbus path str: /org/bluez/hci0/dev_9C_5C_F9_14_6C_14
+    # we want 9C:5C:F9:14:6C:14
+    parts = connected_dev_dbus_path.split('_')    
+    bdaddr_str = ""
+    first = True
+    for i in range(6):
+        if first:
+            first = False
+        else:
+            bdaddr_str += ":"
+        bdaddr_str += parts[i+1]        
+    print "disconnect_bt_dev: bdaddr_str:", bdaddr_str
+    
+    ret = os.system("timeout 7 "+bluez_test_device_cmd +" disconnect " + bdaddr_str)
+    print "disconnect_bt_dev {} done ret {}".format(connected_dev_dbus_path, ret)
+    
+    return ret
+
+
 ################## callbacks from bt_spp_profile dbus functions below
 
-def on_new_connection(self, path, dbus_fd, properties):
+def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
     
     shared_gps_data_queues_dict = self.vars_dict["shared_gps_data_queues_dict"]
     q_list = shared_gps_data_queues_dict["q_list"]
@@ -115,16 +163,7 @@ def on_new_connection(self, path, dbus_fd, properties):
 
         fd = dbus_fd.take()
 
-        sock = socket.fromfd(fd, socket.AF_UNIX, socket.SOCK_STREAM)
-        print "closing sock"
-        sock.close()
-        print "closing fd"
-        os.close(fd)
-        print "done close"
-        raise Exception("closed")
-        
-
-        print("bt_spp_funcs: NewConnection({}, fd: {})".format(path, fd))
+        print("bt_spp_funcs: NewConnection({}, fd: {})".format(connected_dev_dbus_path, fd))
 
         try:
             for key in properties.keys():
@@ -140,7 +179,7 @@ def on_new_connection(self, path, dbus_fd, properties):
         q_list_used_indexes_mask_mutex.acquire()
 
         # get currently used mask
-        print "NewConnection: ori q_list_used_indexes_mask.value type: %s value: 0x%16x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
+        print "NewConnection: ori q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
         used_mask = q_list_used_indexes_mask.value
         used_mask_on_indexes_list = edg_utils.get_on_bit_offset_list(used_mask)
         
@@ -152,9 +191,9 @@ def on_new_connection(self, path, dbus_fd, properties):
             print "NewConnection: got available q_list_index:", q_list_index
             # set this bit as on in the used_mask and set it back into the shared q_list_used_indexes_mask.value
             used_mask |= long(math.pow(2, q_list_index))
-            print "NewConnection: new used_mask type: %s value: 0x%16x" % (type(used_mask), used_mask)
+            print "NewConnection: new used_mask type: %s value: 0x%016x" % (type(used_mask), used_mask)
             q_list_used_indexes_mask.value = used_mask
-            print "NewConnection: new q_list_used_indexes_mask.value type: %s value: 0x%16x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
+            print "NewConnection: new q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
             break
 
         del used_mask_on_indexes_list # this is invalid now, avoid reusing - use the q_list_used_indexes_mask.value with a mutex where needed
@@ -170,12 +209,12 @@ def on_new_connection(self, path, dbus_fd, properties):
         # the exception handler further below would remove/off the q_list_index bit in q_list_used_indexes_mask if we failed to start the writer proc to the fd - as the reader is the one who would normally unset the used bit in the mask
 
         print("starting writer_proc for fd {}", fd)
-        writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(queue, os.dup(fd)))
+        writer_proc = mp.Process(target=write_nmea_from_queue_to_fd, args=(connected_dev_dbus_path, queue, fd))
         writer_proc.start()
         print("started writer_proc for fd {}", fd)
 
         print("starting reader_proc for fd {}", fd)
-        reader_proc = mp.Process(target=read_fd_until_closed, args=(os.dup(fd), q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue))
+        reader_proc = mp.Process(target=read_fd_until_closed, args=(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue))
         reader_proc.start()
         print("started reader_proc for fd {}", fd)
 
@@ -184,15 +223,24 @@ def on_new_connection(self, path, dbus_fd, properties):
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print("WARNING: NewConnection() got exception:", exstr)
 
-        print("NewConnection() got exception: Cleaning up for exception: fd: " + str(fd))
+        
+        print("NewConnection() got exception: Cleaning up [1/3] fd: " + str(fd))
         try:
             if fd is not None:
                 print("os.close() fd: {})".format(fd))
                 os.close(fd)
         except Exception as fde:
-            print("WARNING: Cleaning up for exception fd: " + str(fd) + " exception: " + str(fde))
+            print("WARNING: Cleaning up fd got exception: " + str(fde))
 
-        print("NewConnection() got exception: Cleaning up for exception: q_list_index: " + str(q_list_index))
+        # calling os.close(fd) or even if converted to socket the socket.close() doesn't disconnect remote dev if still connected so force disconnection from bluez device api
+        print("NewConnection() got exception: Cleaning up [2/3] connected_dev_dbus_path: " + str(connected_dev_dbus_path) )
+        try:
+            disconnect_bt_dev(connected_dev_dbus_path)
+        except Exception as cde:
+            print("WARNING: Cleaning up connected_dev_dbus_path got exception: " + str(cde) )
+
+
+        print("NewConnection() got exception: Cleaning up [3/3] q_list_index: " + str(q_list_index))
         try:
             if q_list_index is not None:
                 q_list_used_indexes_mask_mutex.acquire()
@@ -201,9 +249,10 @@ def on_new_connection(self, path, dbus_fd, properties):
                 q_list_used_indexes_mask.value = used_mask
                 q_list_used_indexes_mask_mutex.release()
         except Exception as qle:
-            print(
-            "WARNING: Cleaning up for exception q_list_index: " + str(q_list_index) + " exception: " + str(qle))
+            print("WARNING: Cleaning up q_list_index got exception: " + str(qle))
 
+
+    print "NewConnection() end"
     return  # end of NewConnection() func
 
 

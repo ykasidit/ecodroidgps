@@ -7,6 +7,12 @@ exit_if_failed() {
     fi
 }
 
+if [ -z $1 ]; then
+    echo "please specify target ip as first arg"
+    exit 1
+fi
+
+
 ./build.sh
 exit_if_failed
 

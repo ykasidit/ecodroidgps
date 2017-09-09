@@ -15,6 +15,7 @@ import bt_spp_profile
 import fcntl, socket, struct
 import hashlib
 import ctypes
+import edg_utils
 
 # make sure bluez-5.46 is in folder next to this folder
 
@@ -31,17 +32,6 @@ read input from gps chardev, keep at a central var, send input to each subproces
 
 """
 
-# https://stackoverflow.com/questions/19225188/what-method-can-i-use-instead-of-file-in-python
-import inspect
-if not hasattr(sys.modules[__name__], '__file__'):
-    __file__ = inspect.getfile(inspect.currentframe())
-
-###    
-
-def get_module_path():
-    return os.path.realpath(
-        os.path.join(os.getcwd(), os.path.dirname(__file__))
-    )
 
 g_logger = None
 def init_logger():
@@ -176,7 +166,7 @@ def stage0_check(mac_addr):
     shaer.update("edg")
     this_sha = shaer.hexdigest()
     #print "this_sha:", this_sha
-    licfp = os.path.join(get_module_path(), "edg_0.lic")
+    licfp = os.path.join(edg_utils.get_module_path(), "edg_0.lic")
     lic_pass = False
     with open(licfp, "r") as f:        
         lic_lines = f.readlines()
@@ -269,9 +259,9 @@ args = parse_cmd_args()
 shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
 
 # clone/put bluez_compassion in folder next to this folder
-args["bluez_compassion_path"] = os.path.join(get_module_path(), ".." ,"bluez-compassion")
+args["bluez_compassion_path"] = os.path.join(edg_utils.get_module_path(), ".." ,"bluez-compassion")
 if not os.path.isdir(args["bluez_compassion_path"]):
-    printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
+    printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
     exit(-1)
 
 prepare_bt_device(args)

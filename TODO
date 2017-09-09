@@ -1,29 +1,12 @@
-* use rawarray to store list of used VS use pipes (in pipes queue) per
-subproc to read nmea into its own queue
+* test see btdevapi disc call success on opi
 
-* use sock instead of fd
-* exception in reader/writer/starter - after sock.close() always send
-   bt disc (maybe at hci level) to target dev
+* handle remove bt dongle and reinsert
 
-* clone bluez git and maybe modify/host it on github to disc device on
-   fd/sock close
+* debian rpi read-only mods
 
-* gps reader use q_list_used_indexes_mask
-  * test if rawvalue changed afterwards, does the copied value change
-too? (to know if .value is a ptr ref or a copy of the value as we
-want)
-  * test exception on start writer - check cleanup exception code working
+---
 
-
-* bt profile use q_list_used_indexes_mask
-* bt reader/write use q_list_used_indexes_mask
-
-* which subproc is using high cpu? try remove each:
-  - see https://jameswestby.net/weblog/tech/14-caution-python-multiprocessing-and-glib-dont-mix.html
-* cython to reduce cpu usage. maybe stty to config then read directly from fd
-* do py profiling
-
-* disable modem manager
+* use rawarray to store list of used instead of bitmask
 
 # TODO - use mgmt api directly to adj class
   [mgmt]# add-uuid 1101 1
@@ -34,17 +17,3 @@ Usage: class <major> <minor>
 Set Dev Class succeeded. Class 0x010000
 hci0 class of device changed: 0x010000
 [mgmt]# 
-
-* autostart make depend on bluetooth service - add exec stop to
-   killall python
-
-* handle bt usb removed during connect - must be able to handle
-
-* debian rpi read-only mods
-
-
-* license with opi device ids
-   
-* make autostart and test from opi
-
-* opi demain make sdcard readonly mode

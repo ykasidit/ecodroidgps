@@ -52,7 +52,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 q_list_used_indexes_mask_mutex.release()
                 q_list_used_indexes = edg_utils.get_on_bit_offset_list(used_mask)
                 
-                print "q_list_used_indexes:", q_list_used_indexes
+                # print "q_list_used_indexes:", q_list_used_indexes
                 
                 for q_index in q_list_used_indexes:
                     n_connected_dev += 1
