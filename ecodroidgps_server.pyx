@@ -223,7 +223,7 @@ def alloc_gps_data_queues_dict():
     q_list_used_indexes_mask = multiprocessing.RawValue(ctypes.c_uint32, 0)
     q_list_used_indexes_mask_mutex = multiprocessing.Lock()
 
-    MAX_N_GPS_DATAQUEUES = 64
+    MAX_N_GPS_DATAQUEUES = 32 # 32 bits in ctypes.c_uint32 mask above
     for i in range(MAX_N_GPS_DATAQUEUES):
         q_list.append(multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
 

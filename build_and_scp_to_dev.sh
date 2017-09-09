@@ -32,6 +32,6 @@ scp "$DATED_TAR_NAME" $SSH_USER@$1:~
 exit_if_failed
 echo "success - scp ret: $?"
 
-ssh $SSH_USER@$1 "rm -rf edg ; mkdir edg && cd edg && tar -xzf ../$DATED_TAR_NAME"
+ssh $SSH_USER@$1 "rm -rf edg ; mkdir edg && cd edg && tar -xzf ../$DATED_TAR_NAME ; rm -f edg_release*"
 exit_if_failed
 echo "success - ssh extract ret: $?"
