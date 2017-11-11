@@ -134,25 +134,33 @@ def kill_popen_proc(proc):
     return
 
 
-g_prev_edl_agent_proc = None
-def prepare_bt_device(args):
-    global g_prev_edl_agent_proc
+def power_on_bt_dev(args):
+    cmd = os.path.join(
+        args["bluez_compassion_path"]
+        ,"hciconfig"
+    ) + " -a hci0 up"
+    ret = call_bash_cmd(cmd)
+    return ret
 
+
+def power_off_bt_dev(args):
     cmd = os.path.join(
         args["bluez_compassion_path"]
         ,"hciconfig"
     ) + " -a hci0 down"
     ret = call_bash_cmd(cmd)
 
+
+g_prev_edl_agent_proc = None
+def prepare_bt_device(args):
+    global g_prev_edl_agent_proc
+
+    ret = power_off_bt_dev(args)
     
-    # power the bt dev
-    cmd = os.path.join(
-        args["bluez_compassion_path"]
-        ,"hciconfig"
-    ) + " -a hci0 up"
-    ret = call_bash_cmd(cmd)
+    # power on the bt dev
+    ret = power_on_bt_dev(args)
     if ret != 0:
-        raise Exception("failed to prepare bt device: cmd failed: "+cmd)
+        raise Exception("failed to prepare bt device")
 
     # set discov
     cmd = os.path.join(
@@ -273,6 +281,16 @@ def alloc_gps_data_queues_dict():
 
 print infostr
 
+args = parse_cmd_args()
+
+# clone/put bluez_compassion in folder next to this folder
+args["bluez_compassion_path"] = os.path.join(edg_utils.get_module_path(), ".." ,"bluez-compassion")
+if not os.path.isdir(args["bluez_compassion_path"]):
+    printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
+    exit(-1)
+
+
+# try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr
 mac_addr = None
 try:
     mac_addr = getHwAddr(None)
@@ -283,21 +301,22 @@ if mac_addr is None:
     print "INVALID: failed to get mac_addr"
     exit(2)
 
-ret = stage0_check(mac_addr)
+ret = -1
+try:
+    ret = stage0_check(mac_addr)
+except:
+    type_, value_, traceback_ = sys.exc_info()
+    exstr = str(traceback.format_exception(type_, value_, traceback_))
+    print "WARNING: stage0 check exception:", exstr
+    ret = -1
 if ret == 0:
     pass
 else:
+    power_off_bt_dev(args)
     exit(ret)
 
-args = parse_cmd_args()
 
 shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
-
-# clone/put bluez_compassion in folder next to this folder
-args["bluez_compassion_path"] = os.path.join(edg_utils.get_module_path(), ".." ,"bluez-compassion")
-if not os.path.isdir(args["bluez_compassion_path"]):
-    printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
-    exit(-1)
 
 prepare_bt_device(args)
 
