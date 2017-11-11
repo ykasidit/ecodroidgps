@@ -20,10 +20,43 @@ import edg_utils
 # make sure bluez-5.46 is in folder next to this folder
 
 
-def getHwAddr(ifname):
+def getHwAddr(pattern):
+
+    SERVICE_NAME = "org.bluez"
+    ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
+    DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    manager = dbus.Interface(
+        bus.get_object("org.bluez", "/"),
+	"org.freedesktop.DBus.ObjectManager"
+    )
+    objects = manager.GetManagedObjects()
+
+    adapter_path = None
+    for path, ifaces in objects.iteritems():
+        adapter = ifaces.get(ADAPTER_INTERFACE)
+        if adapter is None:
+            continue
+        if not pattern or pattern == adapter["Address"] or path.endswith(pattern):
+            obj = bus.get_object(SERVICE_NAME, path)
+            adapter_path = dbus.Interface(obj, ADAPTER_INTERFACE).object_path
+            break
+
+    if adapter_path is None:
+        raise Exception("Bluetooth adapter not found")
+
+    adapter = dbus.Interface(bus.get_object("org.bluez", adapter_path),
+					"org.freedesktop.DBus.Properties")
+    addr = adapter.Get("org.bluez.Adapter1", "Address")
+    print "got addr:", addr
+    return addr
+    """ old code return hw addr - now above we return bdaddr only
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
     return ':'.join(['%02x' % ord(char) for char in info[18:24]])
+    """
 
 infostr = "EcoDroidGPS v1.1 Copyright (c) 2017 Kasidit Yusuf. All rights reserved.\nEcoDroidGPS 'Bluetooth GPS' devices are available at: www.ClearEvo.com"
 
@@ -242,9 +275,9 @@ print infostr
 
 mac_addr = None
 try:
-    mac_addr = getHwAddr("eth0")
+    mac_addr = getHwAddr(None)
 except:
-    mac_addr = getHwAddr("wlp4s0")
+    mac_addr = getHwAddr(None)
 
 if mac_addr is None:
     print "INVALID: failed to get mac_addr"
