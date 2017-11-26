@@ -20,8 +20,8 @@ import edg_utils
 # make sure bluez-5.46 is in folder next to this folder
 
 
-def getHwAddr(pattern):
-
+def get_bdaddr():
+    pattern = None
     SERVICE_NAME = "org.bluez"
     ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
     DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
@@ -49,14 +49,15 @@ def getHwAddr(pattern):
 
     adapter = dbus.Interface(bus.get_object("org.bluez", adapter_path),
 					"org.freedesktop.DBus.Properties")
-    addr = adapter.Get("org.bluez.Adapter1", "Address")
-    print "got addr:", addr
+    addr = adapter.Get("org.bluez.Adapter1", "Address").lower()
     return addr
-    """ old code return hw addr - now above we return bdaddr only
+
+
+def get_iface_addr(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
     return ':'.join(['%02x' % ord(char) for char in info[18:24]])
-    """
+
 
 infostr = "EcoDroidGPS v1.1 Copyright (c) 2017 Kasidit Yusuf. All rights reserved.\nEcoDroidGPS 'Bluetooth GPS' devices are available at: www.ClearEvo.com"
 
@@ -201,15 +202,15 @@ def prepare_bt_device(args):
     return
 
 
-def stage0_check(mac_addr):
+def stage0_check(mac_addr, bdaddr):
     print "stage0 mac_addr:", mac_addr
     shaer = hashlib.sha1()
     shaer.update("edg")
-    shaer.update(mac_addr+":edg")
+    shaer.update(mac_addr+":"+bdaddr+":edg_kub")
     shaer.update("edg")
     this_sha = shaer.hexdigest()
     #print "this_sha:", this_sha
-    licfp = os.path.join(edg_utils.get_module_path(), "edg_0.lic")
+    licfp = "/data/edg.lic"
     lic_pass = False
     with open(licfp, "r") as f:        
         lic_lines = f.readlines()
@@ -292,18 +293,22 @@ if not os.path.isdir(args["bluez_compassion_path"]):
 
 # try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr
 mac_addr = None
+bdaddr = get_bdaddr()
 try:
-    mac_addr = getHwAddr(None)
+    mac_addr = get_iface_addr("eth0")
 except:
-    mac_addr = getHwAddr(None)
+    mac_addr = get_iface_addr("wlp4s0")
 
 if mac_addr is None:
     print "INVALID: failed to get mac_addr"
     exit(2)
 
+print "mac_addr:", mac_addr
+print "bdaddr:", bdaddr
+    
 ret = -1
 try:
-    ret = stage0_check(mac_addr)
+    ret = stage0_check(mac_addr, bdaddr)
 except:
     type_, value_, traceback_ = sys.exc_info()
     exstr = str(traceback.format_exception(type_, value_, traceback_))

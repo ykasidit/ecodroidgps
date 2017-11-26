@@ -16,21 +16,21 @@ E4:A4:71:69:06:49
 00:1A:7D:DA:71:13
 
 - generate the license file with command:
-python gen_edg_0_lic.py licensed_mac_addr_list.txt
+python gen_edg_lic.py licensed_mac_addr_list.txt
 
 example output:
 opening mac_addr_list file:  licensed_mac_addr_list.txt
-generating license file: edg_0.lic
+generating license file: /data/edg.lic
 mac_addr: E4:A4:71:69:06:49
 this_sha: e93c95c1224c5e7081726a6fddfcdb69210ba421
 done
 
-- This means it has saved the license file to: edg_0.lic
+- This means it has saved the license file to: /data/edg.lic
 
-- After flashing the sdcard for the Pi, put in PC and copy/paste this file into the '7.6 GB drive':/home/edl/edg folder - overwrite the existing 'edg_0.lic'. If it doesn't allow - try with sudo command below:
-  - right click > copy to copy the path of the existing 'edg_0.lic' file.
-  - in a terminal of the new edg_0.lic folder:
-  sudo copy edg_0.lic <paste>
+- After flashing the sdcard for the Pi, put in PC and copy/paste this file into the 'data drive':/ - overwrite the existing 'edg.lic'. If it doesn't allow - try with sudo command below:
+  - right click > copy to copy the path of the existing 'edg.lic' file.
+  - in a terminal of the new edg.lic folder:
+  sudo cp edg.lic <paste>
 
 - Eject the sdcard well. (In 'Places' file browser, click on the 'eject' icon for both the '7.6 GB' drive and the 'data' drive.
 
