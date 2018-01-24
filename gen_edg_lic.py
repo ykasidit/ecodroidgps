@@ -3,7 +3,7 @@ import sys
 import uuid
 
 print "opening mac_addr_list file: ", sys.argv[1]
-target_lic_fp = "/data/edg.lic"
+target_lic_fp = "edg.lic"
 
 print "generating license file: {}".format(target_lic_fp)
 with open(sys.argv[1], "r") as rf:
