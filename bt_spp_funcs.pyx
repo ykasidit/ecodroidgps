@@ -147,6 +147,42 @@ def disconnect_bt_dev(connected_dev_dbus_path):
     return ret
 
 
+def get_q_list_avail_index(shared_gps_data_queues_dict):
+    q_list = shared_gps_data_queues_dict["q_list"]
+    q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
+    q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
+
+    q_list_index = None
+    
+    ############## critical section: START
+    q_list_used_indexes_mask_mutex.acquire()
+
+    # get currently used mask
+    print "NewConnection: ori q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
+    used_mask = q_list_used_indexes_mask.value
+    used_mask_on_indexes_list = edg_utils.get_on_bit_offset_list(used_mask)
+
+    # get a q_list_index that isn't used yet
+    for i in range(len(q_list)):
+        if i in used_mask_on_indexes_list:
+            continue
+        q_list_index = i
+        print "NewConnection: got available q_list_index:", q_list_index
+        # set this bit as on in the used_mask and set it back into the shared q_list_used_indexes_mask.value
+        used_mask |= long(math.pow(2, q_list_index))
+        print "NewConnection: new used_mask type: %s value: 0x%016x" % (type(used_mask), used_mask)
+        q_list_used_indexes_mask.value = used_mask
+        print "NewConnection: new q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
+        break
+
+    del used_mask_on_indexes_list # this is invalid now, avoid reusing - use the q_list_used_indexes_mask.value with a mutex where needed
+
+    q_list_used_indexes_mask_mutex.release()
+    ############## critical section: END
+
+    return q_list_index
+
+
 ################## callbacks from bt_spp_profile dbus functions below
 
 def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
@@ -175,31 +211,7 @@ def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
         except Exception as e:
             print("WARNING: read new connection property exception: ", str(e))
 
-        ############## critical section: START
-        q_list_used_indexes_mask_mutex.acquire()
-
-        # get currently used mask
-        print "NewConnection: ori q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
-        used_mask = q_list_used_indexes_mask.value
-        used_mask_on_indexes_list = edg_utils.get_on_bit_offset_list(used_mask)
-        
-        # get a q_list_index that isn't used yet
-        for i in range(len(q_list)):
-            if i in used_mask_on_indexes_list:
-                continue
-            q_list_index = i
-            print "NewConnection: got available q_list_index:", q_list_index
-            # set this bit as on in the used_mask and set it back into the shared q_list_used_indexes_mask.value
-            used_mask |= long(math.pow(2, q_list_index))
-            print "NewConnection: new used_mask type: %s value: 0x%016x" % (type(used_mask), used_mask)
-            q_list_used_indexes_mask.value = used_mask
-            print "NewConnection: new q_list_used_indexes_mask.value type: %s value: 0x%016x" % (type(q_list_used_indexes_mask.value), q_list_used_indexes_mask.value) 
-            break
-
-        del used_mask_on_indexes_list # this is invalid now, avoid reusing - use the q_list_used_indexes_mask.value with a mutex where needed
-
-        q_list_used_indexes_mask_mutex.release()
-        ############## critical section: END
+        q_list_index = get_q_list_avail_index(shared_gps_data_queues_dict)
 
         if q_list_index is None:
             raise Exception("ABORT: failed to get any unused queues in q_list - disconnect this new bt connection")

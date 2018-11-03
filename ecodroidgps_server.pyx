@@ -331,62 +331,74 @@ def alloc_gps_data_queues_dict():
 
 ############### MAIN
 
-print infostr
+if __name__ == "__main__":
 
-args = parse_cmd_args()
+    print infostr
 
-# clone/put bluez_compassion in folder next to this folder
-args["bluez_compassion_path"] = os.path.abspath(os.path.join(edg_utils.get_module_path(), os.pardir, "bluez-compassion"))
-if not os.path.isdir(args["bluez_compassion_path"]):
-    printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
-    exit(-1)
-print "args['bluez_compassion_path']:", args["bluez_compassion_path"]
+    args = parse_cmd_args()
+
+    # clone/put bluez_compassion in folder next to this folder
+    args["bluez_compassion_path"] = os.path.abspath(os.path.join(edg_utils.get_module_path(), os.pardir, "bluez-compassion"))
+    if not os.path.isdir(args["bluez_compassion_path"]):
+        printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
+        exit(-1)
+    print "args['bluez_compassion_path']:", args["bluez_compassion_path"]
 
 
-# try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr
-mac_addr = None
-bdaddr = get_bdaddr()
-try:
-    mac_addr = get_iface_addr("eth0")
-except:
-    mac_addr = get_iface_addr("wlp4s0")
+    # try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr
+    mac_addr = None
+    bdaddr = get_bdaddr()
+    try:
+        mac_addr = get_iface_addr("eth0")
+    except:
+        mac_addr = get_iface_addr("wlp4s0")
 
-if mac_addr is None:
-    print "INVALID: failed to get mac_addr"
-    exit(2)
+    if mac_addr is None:
+        print "INVALID: failed to get mac_addr"
+        exit(2)
 
-print "mac_addr:", mac_addr
-print "bdaddr:", bdaddr
-    
-ret = -1
-try:
-    ret = stage0_check(mac_addr, bdaddr)
-except:
-    type_, value_, traceback_ = sys.exc_info()
-    exstr = str(traceback.format_exception(type_, value_, traceback_))
-    print "WARNING: stage0 check exception:", exstr
+    print "mac_addr:", mac_addr
+    print "bdaddr:", bdaddr
+
     ret = -1
-if ret == 0:
-    pass
-else:
-    power_off_bt_dev(args)
-    exit(ret)
+    try:
+        ret = stage0_check(mac_addr, bdaddr)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print "WARNING: stage0 check exception:", exstr
+        ret = -1
+    if ret == 0:
+        pass
+    else:
+        power_off_bt_dev(args)
+        exit(ret)
 
 
-shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
+    shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
 
-prepare_bt_device(args)
+    prepare_bt_device(args)
 
-gobject_main_loop = register_bluez_dbus_profile(shared_gps_data_queues_dict)
+    ### consumers
+    gobject_main_loop = register_bluez_dbus_profile(shared_gps_data_queues_dict)
 
-print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
-gps_reader_proc = multiprocessing.Process(
-    target=edg_gps_reader.read_gps,
-    args=(args["gps_chardev_prefix"], shared_gps_data_queues_dict)
-)
-gps_reader_proc.start()
+    gps_to_ble_parser_proc = multiprocessing.Process(
+        target=edg_gps_to_ble_parser.parse,
+        args=(shared_gps_data_queues_dict,)
+    )
+    gps_parser_proc.start()
 
-gobject_main_loop.run()
+    ###
 
-print("ecodroidgps_server - terminating")
-exit(0)
+    ### producer
+    print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
+    gps_reader_proc = multiprocessing.Process(
+        target=edg_gps_reader.read_gps,
+        args=(args["gps_chardev_prefix"], shared_gps_data_queues_dict)
+    )
+    gps_reader_proc.start()
+
+    gobject_main_loop.run()
+
+    print("ecodroidgps_server - terminating")
+    exit(0)
