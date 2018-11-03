@@ -16,7 +16,7 @@ E4:A4:71:69:06:49
 00:1A:7D:DA:71:13
 
 - generate the license file with command:
-python gen_edg_lic.py licensed_mac_addr_list.txt
+python gen_edg_lic.py licensed_mac_addr_colon_bdaddr_list.txt 
 
 example output:
 opening mac_addr_list file:  licensed_mac_addr_list.txt
@@ -24,6 +24,18 @@ generating license file: /data/edg.lic
 mac_addr: E4:A4:71:69:06:49
 this_sha: e93c95c1224c5e7081726a6fddfcdb69210ba421
 done
+
+2- How to get mac adress for pi device
+-find ip adress of pi from router dhcp table
+-ssh in to pi,
+ssh edl@(ip)
+pass: edl12345
+ifconfig (adress eternet eth0 - macadress)
+
+copy macadress to txt licen tor gub mac adress
+
+python gen_edg_lic.py licensed_mac_addr_list.txt
+
 
 - This means it has saved the license file to: /data/edg.lic
 
