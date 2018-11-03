@@ -1,9 +1,11 @@
 * use bluez-gatt-server github project to host the ble location and navigation profile
-  - start/maintain bluez-gatt-server with required chrcs process running
-    - handle already connected and cannot ad case - how to close existing ble conn first
-  - parse nmea for lat lon etc
-  - populate bit str for that position
-  - mqtt pulish it to topic configured with
+  - parse nmea for validity lat lon utc_time
+    - populate bit str for above according to:
+    https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.location_and_speed.xml
+    - publish hexdump to mqtt://localhost:1883/location_and_speed
+  
+  - handle already connected and cannot advertise case - how to close existing ble conn first
+
 
 * install mosquitto on pi
 
