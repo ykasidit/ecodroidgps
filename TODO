@@ -1,19 +1,18 @@
-* handle remove bt dongle and reinsert
+* use bluez-gatt-server github project to host the ble location and navigation profile
+  - start/maintain bluez-gatt-server with required chrcs process running
+    - handle already connected and cannot ad case - how to close existing ble conn first
+  - parse nmea for lat lon etc
+  - populate bit str for that position
+  - mqtt pulish it to topic configured with
 
-* debian rpi read-only mode - make main partition smaller and new
-   partition to store data - mount /var/lib/bluetooth to some folder
-   in it
+* install mosquitto on pi
 
----
+* make git repo for binary so customer easy to update
 
-* use rawarray to store list of used instead of bitmask
+* test on pi
 
-# TODO - use mgmt api directly to adj class
-  [mgmt]# add-uuid 1101 1
-Add UUID succeeded. Class 0x011000
-[mgmt]# class
-Usage: class <major> <minor>
-[mgmt]# class 0 0
-Set Dev Class succeeded. Class 0x010000
-hci0 class of device changed: 0x010000
-[mgmt]# 
+* test with supported phones
+
+* reply harald
+
+* log all nmea to .txt.gz - if param provided

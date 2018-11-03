@@ -181,26 +181,77 @@ def prepare_bt_device(args):
     if ret != 0:
         raise Exception("failed to prepare bt device: cmd failed: "+cmd)
 
-    # **NOTE** although it returns 1 but it doesnt work in most cases - need to call it manually in terminal or in systemctl systemd service then it works
+    # **NOTE** it doesnt work in most cases - need to call it manually in terminal or in systemctl systemd service then it works
     ret = call_bash_cmd(os.path.join(edg_utils.get_module_path(), "set_class.sh"))
     print "set_class ret:", ret
 
-    # start the auto-pair agent
-    kill_popen_proc(g_prev_edl_agent_proc)
-    cmd = os.path.join(
+    ############# start subprocess commands
+    
+    # start the auto-pair agent    
+    edl_agent_cmd = os.path.join(
         args["bluez_compassion_path"]
         ,"edl_agent"
     )
-    g_prev_edl_agent_proc = popen_bash_cmd(cmd)
-    if g_prev_edl_agent_proc is None:
-        printlog("WARNING: edl_agent proc is None! likely cannot pair devices now!")
-    else:
-        edl_agent_poll_ret = g_prev_edl_agent_proc.poll()
-        printlog("NOTE: edl_agent proc poll() (None means good - it is running) ret:", edl_agent_poll_ret)
 
+    bluez_gatt_server_py_path = os.path.abspath(
+        os.path.join(
+            edg_utils.get_module_path(),
+            os.pardir,
+            "bluez-gatt-server",
+            "bluez-gatt-server.py"
+        )
+    )
+
+    chrc_csv_path = os.path.join(
+        edg_utils.get_module_path(),
+        "ln_chrc.csv"
+    )
+    
+    ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
+        bluez_gatt_server_py_path,
+        chrc_csv_path
+    )
+
+    p = multiprocessing.Process( target=keep_cmds_running, args=([edl_agent_cmd, ble_lnp_cmd],) )
+    p.start()
+
+    # TODO start the ble service
+
+    ############ done started subprocesses
+
+    
     printlog("prepare_bt_device done...")
     return
 
+
+def keep_cmds_running(cmds):
+    running_cmd_to_proc_dict = {}
+    while True:
+        printlog("keep_cmds_running: checking cmds...")
+        try:
+            for cmd in cmds:
+                old_proc = None
+                old_proc_ret = None
+                if cmd in running_cmd_to_proc_dict:
+                    old_proc = running_cmd_to_proc_dict[cmd]
+                    if old_proc is not None:
+                        old_proc_ret = old_proc.poll()
+                if old_proc is None or old_proc_ret is not None:
+                    kill_popen_proc(old_proc)
+                    if old_proc is not None:
+                        printlog("WARNING: keep_cmds_running: old_proc for cmd {} died with ret code {} - restarting it...".format(cmd, old_proc_ret))
+                    printlog("keep_cmds_running: starting new_proc for cmd {}".format(cmd))
+                    new_proc = popen_bash_cmd(cmd)
+                    running_cmd_to_proc_dict[cmd] = new_proc
+                else:
+                    printlog("keep_cmds_running: ok cmd still running: {}".format(cmd))
+                        
+        except:
+            type_, value_, traceback_ = sys.exc_info()
+            exstr = str(traceback.format_exception(type_, value_, traceback_))
+            printlog("WARNING: keep_cmds_running got exception:", exstr)
+        time.sleep(5)
+        
 
 def stage0_check(mac_addr, bdaddr):
     print "stage0 mac_addr:", mac_addr
@@ -285,10 +336,11 @@ print infostr
 args = parse_cmd_args()
 
 # clone/put bluez_compassion in folder next to this folder
-args["bluez_compassion_path"] = os.path.join(edg_utils.get_module_path(), ".." ,"bluez-compassion")
+args["bluez_compassion_path"] = os.path.abspath(os.path.join(edg_utils.get_module_path(), os.pardir, "bluez-compassion"))
 if not os.path.isdir(args["bluez_compassion_path"]):
     printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
     exit(-1)
+print "args['bluez_compassion_path']:", args["bluez_compassion_path"]
 
 
 # try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr

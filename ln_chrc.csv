@@ -1,0 +1,3 @@
+assigned_number,mqtt_url,default_val_hexdump
+0x2A6A,mqtt://localhost:1883/ln_feature,04 00 00 00
+0x2A67,mqtt://localhost:1883/location_and_speed,04 00 00 00 00 00 00 00 00 00
