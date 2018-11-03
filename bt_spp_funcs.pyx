@@ -183,6 +183,23 @@ def get_q_list_avail_index(shared_gps_data_queues_dict):
     return q_list_index
 
 
+def release_q_list_index(shared_gps_data_queues_dict, q_list_index):
+
+    if q_list_index is None:
+        raise Exception("invalid q_list_index none")
+    
+    q_list = shared_gps_data_queues_dict["q_list"]
+    q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
+    q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
+
+    q_list_used_indexes_mask_mutex.acquire()
+    used_mask = q_list_used_indexes_mask.value
+    used_mask ^= long(math.pow(2, q_list_index)) # set the bit to 0
+    q_list_used_indexes_mask.value = used_mask
+    q_list_used_indexes_mask_mutex.release()
+
+
+
 ################## callbacks from bt_spp_profile dbus functions below
 
 def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
@@ -255,11 +272,7 @@ def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
         print("NewConnection() got exception: Cleaning up [3/3] q_list_index: " + str(q_list_index))
         try:
             if q_list_index is not None:
-                q_list_used_indexes_mask_mutex.acquire()
-                used_mask = q_list_used_indexes_mask.value
-                used_mask ^= long(math.pow(2, q_list_index)) # set the bit to 0
-                q_list_used_indexes_mask.value = used_mask
-                q_list_used_indexes_mask_mutex.release()
+                release_q_list_index(shared_gps_data_queues_dict, q_list_index)
         except Exception as qle:
             print("WARNING: Cleaning up q_list_index got exception: " + str(qle))
 

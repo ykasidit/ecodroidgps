@@ -1,4 +1,7 @@
 import bt_spp_funcs
+import sys
+import traceback
+from micropyGPS import MicropyGPS
 
 
 def parse(shared_gps_data_queues_dict):
@@ -16,17 +19,27 @@ def parse(shared_gps_data_queues_dict):
     queue = q_list[q_list_index]
     
     try:
+        my_gps = None
+        
         while True:
             nmea = queue.get()
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")
 
+            if my_gps is None:
+                my_gps = MicropyGPS()
+
             # handle: TypeError: must be string or buffer, not int
-            if isinstance(nmea, str):
-                # TODO - parse it and populate ble location and speed chrc, send to mqtt topic
-                pass
-    
-            
+            if isinstance(nmea, str):                
+                
+                try:
+                    parse_nmea(my_gps, nmea)
+                except:
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = traceback.format_exception(type_, value_, traceback_)
+                    print("WARNING: gps parse exception:", exstr)
+                    my_gps = None  # so it will make new obj in next loop
+                    
                 
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
@@ -34,7 +47,18 @@ def parse(shared_gps_data_queues_dict):
         print("WARNING: edg_gps_parser.parse got exception:", exstr)
 
 
-    # TODO: return the q_list_index to mask
+    # return the q_list_index to mask
+    bt_spp_funcs.release_q_list_index(shared_gps_data_queues_dict, q_list_index)
     
     print "ABORT - invalid state - control should never reach here..."
     raise Exception("invalid state")
+
+
+cpdef parse_nmea(my_gps, str nmea):
+    # parse it
+    for char in nmea:
+        my_gps.update(char)
+
+    # populate ble location and speed chrc
+                    
+    # send to mqtt topic

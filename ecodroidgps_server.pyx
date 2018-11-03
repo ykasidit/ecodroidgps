@@ -16,6 +16,7 @@ import fcntl, socket, struct
 import hashlib
 import ctypes
 import edg_utils
+import edg_gps_parser
 
 # make sure bluez-5.46 is in folder next to this folder
 
@@ -382,8 +383,8 @@ if __name__ == "__main__":
     ### consumers
     gobject_main_loop = register_bluez_dbus_profile(shared_gps_data_queues_dict)
 
-    gps_to_ble_parser_proc = multiprocessing.Process(
-        target=edg_gps_to_ble_parser.parse,
+    gps_parser_proc = multiprocessing.Process(
+        target=edg_gps_parser.parse,
         args=(shared_gps_data_queues_dict,)
     )
     gps_parser_proc.start()
