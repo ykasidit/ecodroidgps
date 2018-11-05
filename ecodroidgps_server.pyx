@@ -15,6 +15,8 @@ import bt_spp_profile
 import fcntl, socket, struct
 import hashlib
 import ctypes
+import pandas as pd
+
 import edg_utils
 import edg_gps_parser
 
@@ -203,10 +205,33 @@ def prepare_bt_device(args):
         )
     )
 
+    
+    ln_feature_mask_dump_str = edg_utils.gen_edg_ln_feature_bitmask_hex_dump_str()
+    print "bitmask_str:", ln_feature_mask_dump_str
+
+    chrc_df = pd.DataFrame(
+        {
+            "assigned_number": [
+                "0x2A6A",
+                "0x2A67"
+            ],
+            "mqtt_url": [
+                "mqtt://localhost:1883/lnf",
+                "mqtt://localhost:1883/las",                
+            ],
+            "default_val_hexdump": [
+                ln_feature_mask_dump_str,
+                "0000"
+            ]
+        }
+    )
+
     chrc_csv_path = os.path.join(
         edg_utils.get_module_path(),
         "ln_chrc.csv"
     )
+
+    chrc_df.to_csv(chrc_csv_path, index=False)
     
     ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
         bluez_gatt_server_py_path,
@@ -332,7 +357,9 @@ def alloc_gps_data_queues_dict():
 
 ############### MAIN
 
-if __name__ == "__main__":
+def main():
+
+    print "hello"
 
     print infostr
 

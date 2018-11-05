@@ -2,6 +2,14 @@ import bt_spp_funcs
 import sys
 import traceback
 from micropyGPS import MicropyGPS
+import bit_utils
+
+
+############## micropyGPS/nmea consts
+# Fix types can be: 1 = no fix, 2 = 2D fix, 3 = 3D fix
+NMEA_FIX_NO = 1
+NMEA_FIX_2D = 2
+NMEA_FIX_3D = 3
 
 
 def parse(shared_gps_data_queues_dict):
@@ -59,6 +67,21 @@ cpdef parse_nmea(my_gps, str nmea):
     for char in nmea:
         my_gps.update(char)
 
+    ###### post parse hooks
     # populate ble location and speed chrc
+    chrc_bytes = gen_ble_location_and_speed_chrc_bytes(my_gps)
+    print "chrc_bytes:", chrc_bytes
                     
     # send to mqtt topic
+
+    
+
+def gen_ble_location_and_speed_chrc_bytes(my_gps):
+
+    # default ret bytes is 
+    
+    fix_type = my_gps.fix_type
+    print "got fix_type:", fix_type
+
+
+
