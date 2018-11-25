@@ -40,11 +40,11 @@ def gen_edg_ln_feature_bitmask_hex_dump_str():
     bitmask = long(0)
 
     ln_bits = [
-        ble_bit_offsets.Instantaneous_Speed_Supported,
-        ble_bit_offsets.Location_Supported,
-        ble_bit_offsets.Elevation_Supported,
-        ble_bit_offsets.UTC_Time_Supported,
-        ble_bit_offsets.Position_Status_Supported
+        ble_bit_offsets.ln_feature.Instantaneous_Speed_Supported,
+        ble_bit_offsets.ln_feature.Location_Supported,
+        ble_bit_offsets.ln_feature.Elevation_Supported,
+        ble_bit_offsets.ln_feature.UTC_Time_Supported,
+        ble_bit_offsets.ln_feature.Position_Status_Supported
     ]
     for bit_offset in ln_bits:
         print "turn on bit:", bit_offset

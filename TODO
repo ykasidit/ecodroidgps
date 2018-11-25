@@ -1,3 +1,11 @@
+python test_parse_gps.py
+
+- add utc time
+- unittest check all from chrc hex output: meters per second, lat lon correctness etc
+- rm debug prints
+- mqtt pub through py api
+- test on real dev
+
 * use bluez-gatt-server github project to host the ble location and navigation profile
   - parse nmea for validity lat lon utc_time
     - populate bit str for above according to:
