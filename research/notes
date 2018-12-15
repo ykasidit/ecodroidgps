@@ -1,3 +1,28 @@
+orange pi zero archlinux arm configs
+------------------------------------
+
+- Image from https://github.com/nguiard/archlinux-orange-pi-zero
+
+- add alarm to sudoers
+  - sudo emacs /etc/sudoers
+    - add to end of file:
+    alarm   ALL=(ALL) ALL
+
+- pacman -Syy
+- pacman -S sudo python2 python2-pip python2-pandas python2-numpy
+- pip2 install pyserial
+- etc... until you can run ecodroidgps.py
+    
+- do https://github.com/nils-werner/raspi-overlayroot
+  - do not change/use fstab
+  - for ro mount - edit /etc/boot.txt then run sudo ./mkscr
+
+- after overlayrootfs is setup, run 'rwrootfs' to enter chroot
+  - however, you cannot modify /boot again even after that chroot - becase /boot is mounted to overlayroot too - run mount command in this chroot and you'll see it - so cd / and umount /boot first before changing files in /boot in chroot to take effect.
+
+- after 'rwrootfs', /overlay/lower is remounted as rw so if you want to scp to a the persistant sdcard (not the tmpfs overlayfs as in ~ or all of /) then scp to /overlay/lower/home/alarm instead - so you can now see the scp files in chroot - otherwise the scp files wont be seen in the chroot.
+
+
 cython cross compile
 --------------------
 

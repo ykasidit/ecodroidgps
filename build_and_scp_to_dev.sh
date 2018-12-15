@@ -12,26 +12,39 @@ if [ -z $1 ]; then
     exit 1
 fi
 
-
 ./build.sh
 exit_if_failed
 
-rm -f edg_release*.tar.gz
+cp *.so ../ecodroidgps_bin
+exit_if_failed
+cp *.py ../ecodroidgps_bin
+exit_if_failed
+rm ../ecodroidgps_bin/gen_edg_lic.py
+exit_if_failed
+rm ../ecodroidgps_bin/gen_edg_0_lic.py
+exit_if_failed
+rm ../ecodroidgps_bin/setup.py
+exit_if_failed
+rm ../ecodroidgps_bin/*.pyc
+rm -f ../edg_release*.tar.gz
 
 DATE=$(date +%d%m%y)
 DATED_TAR_NAME="edg_release_${DATE}.tar.gz"
 
-tar -czf $DATED_TAR_NAME *.so ecodroidgps.py bt_spp_profile.py edg_0.lic set_class.sh
-
+cd ../ecodroidgps_bin
+tar -czf ../$DATED_TAR_NAME *
+cd ..
 echo created $DATED_TAR_NAME done...
 
-SSH_PASS="edl12345"
-SSH_USER="edl"
+SSH_PASS="alarm"
+SSH_USER="alarm"
 echo "scp to dev: $1 password $SSH_PASS"
-scp "$DATED_TAR_NAME" $SSH_USER@$1:~
+CMD="sshpass -p $SSH_PASS scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $DATED_TAR_NAME $SSH_USER@$1:/overlay/lower/home/alarm"
+echo "CMD: $CMD"
+bash -c "$CMD"
 exit_if_failed
 echo "success - scp ret: $?"
 
-ssh $SSH_USER@$1 "rm -rf edg ; mkdir edg && cd edg && tar -xzf ../$DATED_TAR_NAME ; rm -f edg_release*"
+sshpass -p "$SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $SSH_USER@$1 "cd /overlay/lower/home/alarm ; rm -rf edg ; mkdir edg && cd edg && tar -xzf ../$DATED_TAR_NAME ; rm -f edg_release*"
 exit_if_failed
 echo "success - ssh extract ret: $?"

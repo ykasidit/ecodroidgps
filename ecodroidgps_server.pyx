@@ -8,7 +8,11 @@ import logging.handlers
 import argparse
 import traceback
 import multiprocessing
-import gobject
+try:
+    import gobject
+except:
+    from gi.repository import GObject as gobject
+    
 import dbus.mainloop.glib
 import edg_gps_reader
 import bt_spp_profile
@@ -227,11 +231,12 @@ def prepare_bt_device(args):
     )
 
     chrc_csv_path = os.path.join(
-        edg_utils.get_module_path(),
+        "/tmp",
         "ln_chrc.csv"
     )
 
     chrc_df.to_csv(chrc_csv_path, index=False)
+    chmodret = os.system("chmod 644 {}".format(chrc_csv_path))
     
     ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
         bluez_gatt_server_py_path,

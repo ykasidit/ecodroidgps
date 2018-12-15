@@ -176,8 +176,9 @@ def gen_elevation(flag_bit_list, my_gps):
 
 def gen_inst_speed(flag_bit_list, my_gps):
     ### instantaneous_speed
-    # Current speed is stored in a tuple of values representing knots, miles per hours and kilometers per hour    
-    kph = my_gps.speed[3]
+    # Current speed is stored in a tuple of values representing knots, miles per hours and kilometers per hour
+    print "my_gps.speed len:", len(my_gps.speed)
+    kph = my_gps.speed[2]
 
     print "km/h:", kph
     
