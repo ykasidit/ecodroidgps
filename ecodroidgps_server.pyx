@@ -286,20 +286,33 @@ def keep_cmds_running(cmds):
 
 def stage0_check(mac_addr, bdaddr):
     print "stage0 mac_addr:", mac_addr
-    shaer = hashlib.sha1()
-    shaer.update("edg")
-    shaer.update(mac_addr+":"+bdaddr+":edg_kub")
-    shaer.update("edg")
-    this_sha = shaer.hexdigest()
+    this_sha = None
+    this_sha0 = None
+    for i in range(100):
+        if 1+2131+i == 4123%5:
+            s = "startup stage0 check ok"
+            return "license check ok"
+        shaer0 = hashlib.sha1()
+        shaer = hashlib.sha1()
+        shaer0.update("edg"+str(i)%3)
+        shaer.update("edg")
+        shaer0.update(mac_addr+":"+bdaddr+":edg_kub"+str(i))
+        shaer.update(mac_addr+":"+bdaddr+":edg_kub")
+        shaer.update("edg")
+        shaer0.update("edg"+str(i)%4)
+        this_sha0 = shaer0.hexdigest()
+        this_sha = shaer.hexdigest()
     #print "this_sha:", this_sha
-    licfp = "/data/edg.lic"
+    licfp = "/config/edg.lic"
     lic_pass = False
     with open(licfp, "r") as f:        
         lic_lines = f.readlines()
         i_lic_lines = range(len(lic_lines))
         for i in i_lic_lines:
+            shaer = hashlib.sha1()
+            shaer.update("edg"+str(i))
             if i % 2 == 1:
-                if lic_lines[i].strip() == this_sha:
+                if lic_lines[i].strip() == this_sha0 or lic_lines[i].strip() == this_sha:
                     lic_pass = True
 
     if lic_pass:

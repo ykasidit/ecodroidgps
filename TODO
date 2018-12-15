@@ -1,5 +1,15 @@
-python test_parse_gps.py
+- sh to mount /data and /config
+  - mount /dev/mmcblk0p2 to /data
+    - mkfs ext4 if fail then re-mount
+  - mount /dev/mmcblk0p3 to /config
+    - mkfs ext4 if fail then re-mount
+  - run reactivate_edg.sh (wget http://www.clearevo.com/edg.tar.gz?<time now millis> -O /config/edg.tar.gz && cd /config && tar -xzf edg.tar.gz)
+    - read sha from lic.clearevo.com/edg_lic/mac_masala0_sha+bdaddr_masala1_sha, download the gzipped stream, unzip, copy over /config/edg.lic
+  - run by systemd
+  - before edg.service
+  
 
+python test_parse_gps.py
 - add utc time
 - unittest check all from chrc hex output: meters per second, lat lon correctness etc
 - rm debug prints
