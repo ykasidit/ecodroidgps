@@ -1,12 +1,9 @@
-- sh to mount /data and /config
-  - mount /dev/mmcblk0p2 to /data
-    - mkfs ext4 if fail then re-mount
-  - mount /dev/mmcblk0p3 to /config
-    - mkfs ext4 if fail then re-mount
-  - run reactivate_edg.sh (wget http://www.clearevo.com/edg.tar.gz?<time now millis> -O /config/edg.tar.gz && cd /config && tar -xzf edg.tar.gz)
-    - read sha from lic.clearevo.com/edg_lic/mac_masala0_sha+bdaddr_masala1_sha, download the gzipped stream, unzip, copy over /config/edg.lic
-  - run by systemd
-  - before edg.service
+- run at start python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p2:/data,/dev/mmcblk0p3:/config
+- if lic fail then py would run:
+  - timeout 60 bash -c "wget http://www.clearevo.com/edg_lic.tar.gz?`date +%s` -O /config/edg_lic.tar.gz && cd /config && tar -xzf edg_lic.tar.gz"
+
+- run by systemd
+- before edg.service
   
 
 python test_parse_gps.py
