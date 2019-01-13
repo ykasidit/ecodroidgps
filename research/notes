@@ -1,5 +1,6 @@
-new sdcard os
--------------
+new os sdcard prepare
+=====================
+
 add user admin
 
 nano /etc/sudoers
@@ -9,8 +10,11 @@ admin ALL=(ALL) NOPASSWD: ALL
 nano /etc/ssh/ssd_config
 permitrootlogin no
 
-install conda
-http://jotmynotes.blogspot.com/2017/08/raspberry-pi-3-installation-guide-arm.html
+reboot
+
+then back on pc:
+cd ansible_scripts
+ansible-playbook prepare_pi_bt.yml
 
 ---
 

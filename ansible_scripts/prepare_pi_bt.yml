@@ -1,0 +1,48 @@
+- hosts: pi
+  become: yes
+  vars:
+    home: /home/admin
+    bluez_url: http://www.kernel.org/pub/linux/bluetooth/bluez-5.50.tar.xz
+    bluez_target_dir: "{{ home }}/bluez-5.50"
+    
+  tasks:
+
+  - shell: mkdir -p /etc/systemd/system/networking.service.d
+
+  - name: copy reduce-timeout.conf
+    copy:
+      src: reduce-timeout.conf
+      dest: /etc/systemd/system/networking.service.d/reduce-timeout.conf
+
+  - apt_repository:
+      repo: deb http://httpredir.debian.org/debian sid main contrib non-free
+      state: present
+
+  - name: install software packages
+    command: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus
+
+  - name: mkdir bluez_target_dir
+    file:
+      path: "{{ bluez_target_dir }}"
+      state: directory
+    
+  - name: download and extract bluez src    
+    unarchive:
+      src: "{{ bluez_url }}"
+      dest: "{{ home }}"
+      remote_src: yes
+
+  - name: bluez configure make make install
+    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var && make && sudo make install"
+    args:
+      executable: /bin/bash
+
+  - name: bluetoothctl ver check
+    shell: bluetoothctl -v | grep 5.50
+    args:
+      executable: /bin/bash
+
+  
+
+    
+    

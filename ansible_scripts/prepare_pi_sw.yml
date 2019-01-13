@@ -1,0 +1,35 @@
+- hosts: pi
+  become: yes
+  vars:
+    home: /home/admin
+    
+  tasks:
+
+  - name: install/update bluez-compassion
+    git:
+      repo: 'https://github.com/ykasidit/bluez-compassion.git'
+      dest: "{{ home }}/bluez-compassion"
+      clone: yes
+      update: yes
+
+  - name: install/update bluez-gatt-server
+    git:
+      repo: 'https://github.com/ykasidit/bluez-gatt-server.git'
+      dest: "{{ home }}/bluez-gatt-server"
+      clone: yes
+      update: yes
+
+  - name: install micropygps
+    git:
+      repo: https://github.com/inmcm/micropyGPS.git
+      dest: "{{ home }}/micropyGPS"
+      clone: yes
+      update: no
+
+  - name: install ecodroidgps
+    git:
+      repo: https://gitlab.com/ykasidit/ecodroidgps_bin.git
+      dest: "{{ home }}/ecodroidgps"
+      clone: yes
+      update: yes
+
