@@ -294,12 +294,12 @@ def stage0_check(mac_addr, bdaddr):
             return "license check ok"
         shaer0 = hashlib.sha1()
         shaer = hashlib.sha1()
-        shaer0.update("edg"+str(i)%3)
+        shaer0.update("edg"+str(i%3))
         shaer.update("edg")
         shaer0.update(mac_addr+":"+bdaddr+":edg_kub"+str(i))
         shaer.update(mac_addr+":"+bdaddr+":edg_kub")
         shaer.update("edg")
-        shaer0.update("edg"+str(i)%4)
+        shaer0.update("edg"+str(i%4))
         this_sha0 = shaer0.hexdigest()
         this_sha = shaer.hexdigest()
     #print "this_sha:", this_sha
@@ -414,6 +414,15 @@ def main():
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print "WARNING: stage0 check exception:", exstr
         ret = -1
+
+    if ret != 0:
+        print 'try dl lic now...'
+        cmdret = os.system('timeout 60 bash -c "wget http://www.clearevo.com/edg_lic.tar.gz?`date +%s` -O /config/edg_lic.tar.gz && cd /config && tar -xzf edg_lic.tar.gz"')
+        print "try dl lic cmdret:", cmdret
+        if cmdret == 0:
+            print 'recheck stage0'
+            ret = stage0_check(mac_addr, bdaddr)
+
     if ret == 0:
         pass
     else:

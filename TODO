@@ -1,35 +1,27 @@
-- run at start python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p2:/data,/dev/mmcblk0p3:/config
-- if lic fail then py would run:
-  - timeout 60 bash -c "wget http://www.clearevo.com/edg_lic.tar.gz?`date +%s` -O /config/edg_lic.tar.gz && cd /config && tar -xzf edg_lic.tar.gz"
+- ansible script to
+  - debain again
+    - ansible install miniconda
+      - conda install from url pandas numpy armhf
+  - install dep
+  - run bluez-gatt-server unittests
+  - install edg from git@gitlab.com:ykasidit/ecodroidgps_bin.gitrun edg unittest and get running
+- autostart
+- do https://github.com/nils-werner/raspi-overlayroot
+  - do not change/use fstab
+  - for ro mount - edit /etc/boot.txt then run sudo ./mkscr
+- test well
+- reduce debug print level
 
-- run by systemd
-- before edg.service
-  
+- alarm not seeing usb through hub
+- autostart systemd: cd /home/alarm/edg && bash start.sh/
+
+- gatt device name
+
+- take custom name from /config/custom_name  
 
 python test_parse_gps.py
-- add utc time
-- unittest check all from chrc hex output: meters per second, lat lon correctness etc
 - rm debug prints
-- mqtt pub through py api
+- mqtt pub through api?
 - test on real dev
-
-* use bluez-gatt-server github project to host the ble location and navigation profile
-  - parse nmea for validity lat lon utc_time
-    - populate bit str for above according to:
-    https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.location_and_speed.xml
-    - publish hexdump to mqtt://localhost:1883/location_and_speed
-  
-  - handle already connected and cannot advertise case - how to close existing ble conn first
-
-
-* install mosquitto on pi
-
-* make git repo for binary so customer easy to update
-
-* test on pi
-
-* test with supported phones
-
-* reply harald
 
 * log all nmea to .txt.gz - if param provided
