@@ -37,6 +37,6 @@
       update: yes
 
   - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && nose2
+    shell: cd "{{ home }}/ecodroidgps" && nose2 -F
 
 
