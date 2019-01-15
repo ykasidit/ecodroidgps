@@ -1,5 +1,5 @@
 - hosts: pi
-  become: yes
+  become: no
   vars:
     home: /home/admin
     
@@ -19,12 +19,15 @@
       clone: yes
       update: yes
 
+  - name: test bluez-gatt-server
+    shell: cd "{{ home }}/bluez-gatt-server" && nose2
+
   - name: install micropygps
     git:
-      repo: https://github.com/inmcm/micropyGPS.git
-      dest: "{{ home }}/micropyGPS"
+      repo: https://github.com/ykasidit/micropyGPS-python2.git
+      dest: "{{ home }}/micropyGPS-python2.git"
       clone: yes
-      update: no
+      update: yes
 
   - name: install ecodroidgps
     git:
@@ -32,4 +35,8 @@
       dest: "{{ home }}/ecodroidgps"
       clone: yes
       update: yes
+
+  - name: test ecodroidgps
+    shell: cd "{{ home }}/ecodroidgps" && nose2
+
 
