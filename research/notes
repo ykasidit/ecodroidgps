@@ -1,3 +1,13 @@
+Debian testing armhf
+----------------------
+
+https://ownyourbits.com/2018/06/27/running-and-building-arm-docker-containers-in-x86/
+
+docker run -v /usr/bin/qemm-static:/usr/bin/qemu-arm-static -v /data/debootstrap-armhf/root:/root -ti arm32v7/debian:testing
+
+
+---
+
 new os sdcard prepare
 =====================
 

@@ -15,7 +15,7 @@ cd ../bluez-compassion && ./hciconfig -a hci0 name "$NAME"
 cd $START_DIR
 exit_if_failed
 
-python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p2:/data,/dev/mmcblk0p3:/config
+python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p2:/config,/dev/mmcblk0p3:/data
 exit_if_failed
 
 sudo chmod 777 /data

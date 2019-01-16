@@ -36,6 +36,12 @@
       clone: yes
       update: yes
 
+  - name: ensure mount point dirs exist
+    shell: mkdir -p /config ; mkdir -p /data
+
+  - pip:
+      name: pyserial
+
   - name: test ecodroidgps
     shell: cd "{{ home }}/ecodroidgps" && nose2 -F
 
