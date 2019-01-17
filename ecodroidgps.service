@@ -1,0 +1,10 @@
+[Unit]
+Description=ecodroidgps service
+
+[Service]
+Restart=always
+RestartSec=60
+ExecStart=/bin/bash -c "cd /home/admin/ecodroidgps && ./start.sh"
+
+[Install]
+WantedBy=multi-user.target

@@ -15,6 +15,10 @@ fi
 ./build.sh
 exit_if_failed
 
+cp *.txt ../ecodroidgps_bin
+exit_if_failed
+cp *.service ../ecodroidgps_bin
+exit_if_failed
 cp *.sh ../ecodroidgps_bin
 exit_if_failed
 cp *.so ../ecodroidgps_bin
