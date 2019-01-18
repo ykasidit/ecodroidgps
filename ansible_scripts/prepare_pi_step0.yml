@@ -25,7 +25,7 @@
     shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject
 
   - name: install pip packages
-    shell: sudo pip install nose2 paho-mqtt
+    shell: sudo pip install nose2 pyserial paho-mqtt
 
   - name: mod mosquitto conf
     shell: sudo sed -i "s/persistence true/persistence false/g" /etc/mosquitto/mosquitto.conf ; systemctl enable mosquitto && systemctl start mosquitto

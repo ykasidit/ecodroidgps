@@ -39,13 +39,15 @@
   - name: ensure mount point dirs exist
     shell: mkdir -p /config ; mkdir -p /data
 
-  - pip:
-      name: pyserial
-
   - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && nose2 -F --quiet
+    shell: cd "{{ home }}/ecodroidgps" && sudo nose2 -F --quiet
 
   - name: install ecodroidgps service
-    shell: cd "{{ home }}/ecodroidgps" && ./install_service.sh
+    shell: cd "{{ home }}/ecodroidgps" && sudo ./install_service.sh
+
+  - lineinfile:
+    path: /etc/selinux/config
+    regexp: '^Storage='
+    line: 'Storage=volatile'
 
 
