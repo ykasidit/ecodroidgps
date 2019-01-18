@@ -17,7 +17,7 @@ def test():
     ]
 
     for cmd in cmds:
-        print "test cmd:", cmd
+        print "test cmd:", "sudo "+cmd
         ret = os.system(cmd)
         print "cmd ret:", ret
         assert ret == 0

@@ -43,6 +43,9 @@
       name: pyserial
 
   - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && nose2 -F
+    shell: cd "{{ home }}/ecodroidgps" && nose2 -F --quiet
+
+  - name: install ecodroidgps service
+    shell: cd "{{ home }}/ecodroidgps" && ./install_service.sh
 
 
