@@ -14,15 +14,14 @@
       src: reduce-timeout.conf
       dest: /etc/systemd/system/networking.service.d/reduce-timeout.conf
 
-  - apt_repository:
-      repo: deb http://httpredir.debian.org/debian sid main contrib non-free
-      state: present
-
+  - name: install keys, add universe repo, update, upgrade
+    shell: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8B48AD6246925553 7638D0442B90D010 04EE7237B7D453EC && sudo add-apt-repository universe && sudo apt-get update && sudo apt-get -y upgrade
+  
   - name: make sure bluez apt package removed
     shell: sudo apt-get purge bluez
 
   - name: install apt packages
-    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject
+    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject overlayroot
 
   - name: install pip packages
     shell: sudo pip install nose2 pyserial paho-mqtt
@@ -30,15 +29,19 @@
   - name: mod mosquitto conf
     shell: sudo sed -i "s/persistence true/persistence false/g" /etc/mosquitto/mosquitto.conf ; systemctl enable mosquitto && systemctl start mosquitto
 
-  - name: check mosquitto conf
-    shell: grep "persistence false" /etc/mosquitto/mosquitto.conf
+  - lineinfile:
+      path: /etc/mosquitto/mosquitto.conf
+      regexp: '^persistence'
+      line: 'persistence false'
 
   - lineinfile:
       path: /etc/mosquitto/mosquitto.conf
       regexp: '^log_dest'
       line: 'log_dest none'
 
-
+  - name: check mosquitto conf
+    shell: grep "persistence false" /etc/mosquitto/mosquitto.conf
+ 
   - name: mkdir bluez_target_dir
     file:
       path: "{{ bluez_target_dir }}"
@@ -62,6 +65,8 @@
     shell: bluetoothctl -v | grep 5.50
     args:
       executable: /bin/bash
+
+  - shell: systemctl is-active bluetooth
 
   
 

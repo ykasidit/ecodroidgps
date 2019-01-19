@@ -17,8 +17,10 @@ nano /etc/sudoers
 add line:
 admin ALL=(ALL) NOPASSWD: ALL
 
-nano /etc/ssh/ssd_config
+nano /etc/ssh/sshd_config
 permitrootlogin no
+
+- do the first 3 shell commands in prepare_pi_step0.yml manually just in case it needs some user interactions
 
 reboot
 

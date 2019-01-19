@@ -1,5 +1,5 @@
 - hosts: pi
-  become: yes
+  become: no
   vars:
     home: /home/admin
     
@@ -35,21 +35,4 @@
       dest: "{{ home }}/ecodroidgps"
       clone: yes
       update: yes
-
-  - name: ensure mount point dirs exist - test ecodroidgps would mount
-    shell: sudo mkdir -p /config ; sudo mkdir -p /data
-
-  - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && sudo nose2 -F --quiet
-
-  - name: prepare bluetooth folder link in mounted dev to store pairing info
-    shell: sudo mkdir -p /config/bluetooth && sudo rm -rf /var/lib/bluetooth && sudo ln -s /config/bluetooth /var/lib/bluetooth
-
-  - name: install ecodroidgps service
-    shell: cd "{{ home }}/ecodroidgps" && sudo ./install_service.sh
-
-  - lineinfile:
-      path: /etc/systemd/journald.conf
-      regexp: '^Storage='
-      line: 'Storage=volatile'
 
