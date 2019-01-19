@@ -23,6 +23,7 @@ import pandas as pd
 
 import edg_utils
 import edg_gps_parser
+from dl_lic import dl_lic
 
 # make sure bluez-5.46 is in folder next to this folder
 
