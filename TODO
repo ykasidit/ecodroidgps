@@ -1,23 +1,14 @@
-- ansible script to
-  - debain again
-    - ansible install miniconda
-      - conda install from url pandas numpy armhf
-  - install dep
-  - run bluez-gatt-server unittests
-  - install edg from git@gitlab.com:ykasidit/ecodroidgps_bin.gitrun edg unittest and get running
-- autostart
+- review mount py, unittest dont restart bluetooth
 - do https://github.com/nils-werner/raspi-overlayroot
-  - do not change/use fstab
   - for ro mount - edit /etc/boot.txt then run sudo ./mkscr
-- test well
+
+- set gatt device name + BLE
+
 - reduce debug print level
 
-- alarm not seeing usb through hub
-- autostart systemd: cd /home/alarm/edg && bash start.sh/
+- test well
 
-- gatt device name
-
-- take custom name from /config/custom_name  
+- clear /conf/bluetooth test bluetooth pair stays, reboot make sure it stays see bluetoothctl or try connect
 
 python test_parse_gps.py
 - rm debug prints

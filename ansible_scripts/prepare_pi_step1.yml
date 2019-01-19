@@ -1,5 +1,5 @@
 - hosts: pi
-  become: no
+  become: yes
   vars:
     home: /home/admin
     
@@ -36,18 +36,30 @@
       clone: yes
       update: yes
 
-  - name: ensure mount point dirs exist
-    shell: mkdir -p /config ; mkdir -p /data
+  - name: ensure mount point dirs exist - test ecodroidgps would mount
+    shell: sudo mkdir -p /config ; sudo mkdir -p /data
 
   - name: test ecodroidgps
     shell: cd "{{ home }}/ecodroidgps" && sudo nose2 -F --quiet
+
+  - name: prepare bluetooth folder link in mounted dev to store pairing info
+    shell: sudo mkdir -p /config/bluetooth && sudo rm -rf /var/lib/bluetooth && sudo ln -s /config/bluetooth /var/lib/bluetooth
 
   - name: install ecodroidgps service
     shell: cd "{{ home }}/ecodroidgps" && sudo ./install_service.sh
 
   - lineinfile:
-    path: /etc/selinux/config
-    regexp: '^Storage='
-    line: 'Storage=volatile'
+      path: /etc/systemd/journald.conf
+      regexp: '^Storage='
+      line: 'Storage=volatile'
 
+  - name: clone raspi-overlayroot
+    git:
+      repo: https://github.com/nils-werner/raspi-overlayroot
+      dest: "{{ home }}/raspi-overlayroot"
+      clone: yes
+      update: yes
+
+  - name: run raspi-overlayroot
+    shell: cd "{{ home }}/raspi-overlayroot" && sudo makepkg -si
 
