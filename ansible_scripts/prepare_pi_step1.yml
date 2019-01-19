@@ -53,13 +53,3 @@
       regexp: '^Storage='
       line: 'Storage=volatile'
 
-  - name: clone raspi-overlayroot
-    git:
-      repo: https://github.com/nils-werner/raspi-overlayroot
-      dest: "{{ home }}/raspi-overlayroot"
-      clone: yes
-      update: yes
-
-  - name: run raspi-overlayroot
-    shell: cd "{{ home }}/raspi-overlayroot" && sudo makepkg -si
-

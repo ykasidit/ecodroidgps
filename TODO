@@ -1,7 +1,3 @@
-- review mount py, unittest dont restart bluetooth
-- do https://github.com/nils-werner/raspi-overlayroot
-  - for ro mount - edit /etc/boot.txt then run sudo ./mkscr
-
 - set gatt device name + BLE
 
 - reduce debug print level
@@ -9,6 +5,8 @@
 - test well
 
 - clear /conf/bluetooth test bluetooth pair stays, reboot make sure it stays see bluetoothctl or try connect
+
+- license flask service read gsheets
 
 python test_parse_gps.py
 - rm debug prints

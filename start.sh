@@ -12,24 +12,29 @@ START_DIR=$(pwd)
 python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p2:/config,/dev/mmcblk0p3:/data
 exit_if_failed
 
+mkdir -p /config/bluetooth
+
+systemctl is-active bluetooth
+exit_if_failed
+
 NAME=`cat /config/name.txt || echo 'EcoDroidGPS Bluetooth GPS'`
 cd ../bluez-compassion && ./hciconfig -a hci0 name "$NAME"
 
 cd $START_DIR
 exit_if_failed
 
-sudo chmod 777 /data
+chmod 777 /data
 exit_if_failed
 
 cd /data
 exit_if_failed
 rm config
-sudo ln -s /config
+ln -s /config
 exit_if_failed
 
 cd $START_DIR
 exit_if_failed
-sudo chmod 777 /config
+chmod 777 /config
 exit_if_failed
 
 python ecodroidgps.py --gps_chardev_prefix /dev/ttyACM

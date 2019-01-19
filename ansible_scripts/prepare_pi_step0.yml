@@ -33,6 +33,12 @@
   - name: check mosquitto conf
     shell: grep "persistence false" /etc/mosquitto/mosquitto.conf
 
+  - lineinfile:
+      path: /etc/mosquitto/mosquitto.conf
+      regexp: '^log_dest'
+      line: 'log_dest none'
+
+
   - name: mkdir bluez_target_dir
     file:
       path: "{{ bluez_target_dir }}"
