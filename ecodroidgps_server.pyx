@@ -417,7 +417,7 @@ def main():
 
     if ret != 0:
         print 'try dl lic now...'
-        cmdret = os.system('timeout 60 bash -c "wget http://www.clearevo.com/edg_lic.tar.gz?`date +%s` -O /config/edg_lic.tar.gz && cd /config && tar -xzf edg_lic.tar.gz"')
+        cmdret = dl_lic(mac_addr, bdaddr, "/config/edg.lic")
         print "try dl lic cmdret:", cmdret
         if cmdret == 0:
             print 'recheck stage0'

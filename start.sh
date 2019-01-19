@@ -17,6 +17,9 @@ mkdir -p /config/bluetooth
 systemctl is-active bluetooth
 exit_if_failed
 
+systemctl is-active mosquitto
+exit_if_failed
+
 NAME=`cat /config/name.txt || echo 'EcoDroidGPS Bluetooth GPS'`
 cd ../bluez-compassion && ./hciconfig -a hci0 name "$NAME"
 
