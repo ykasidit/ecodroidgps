@@ -312,9 +312,8 @@ def stage0_check(mac_addr, bdaddr):
         for i in i_lic_lines:
             shaer = hashlib.sha1()
             shaer.update("edg"+str(i))
-            if i % 2 == 1:
-                if lic_lines[i].strip() == this_sha0 or lic_lines[i].strip() == this_sha:
-                    lic_pass = True
+            if lic_lines[i].strip() == this_sha0 or lic_lines[i].strip() == this_sha:
+                lic_pass = True
 
     if lic_pass:
         print "startup stage0 check ok"

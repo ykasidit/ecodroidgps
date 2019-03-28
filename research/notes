@@ -1,3 +1,22 @@
+pure hardware gps serial to hc-05
+=================================
+
+my usb serial:
+ - lightest color wire is RX - connect to device's TX
+
+
+talk from notebook to hc-05
+- sudo busybox microcom -s 9600 /dev/ttyUSB5
+- exit ctrl-x
+
+config hc-05:
+  - short vcc and en ports
+  - sudo busybox microcom -s 38400 /dev/ttyUSB5 then use at as per http://www.electronicaestudio.com/docs/istd016A.pdf
+  
+
+
+---
+
 Debian testing armhf
 ----------------------
 

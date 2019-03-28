@@ -1,3 +1,13 @@
+* identify galileo, beidou, gnss, glonass in u-center and nmea
+  - reply aussie email
+  - conf disable le
+  - after got date/time - save nmea into tar.gz into gpx file
+  - test powerbank how long
+
+* ecodroidgps lite - in same g-receiver box, solar powered?
+
+* restore ecodroidgps.service and start.sh from pi
+
 - set gatt device name + BLE
 
 - reduce debug print level
@@ -14,3 +24,22 @@ python test_parse_gps.py
 - test on real dev
 
 * log all nmea to .txt.gz - if param provided
+
+---
+
+pure hardware gps serial to hc-05
+=================================
+
+my usb serial:
+ - lightest color wire is RX - connect to device's TX
+
+
+talk from notebook to hc-05
+- sudo busybox microcom -s 9600 /dev/ttyUSB5
+- exit ctrl-x
+
+config hc-05:
+  - short vcc and en ports
+  - sudo busybox microcom -s 38400 /dev/ttyUSB5 then use at as per http://www.electronicaestudio.com/docs/istd016A.pdf
+  
+
