@@ -22,24 +22,6 @@
       regexp: '^Storage='
       line: 'Storage=volatile'
 
-  - name: copy cfg80211 conf
-    copy:
-      src: cfg80211.conf
-      dest: /etc/modprobe.d/cfg80211.conf
-      
-  - name: copy mac80211 conf
-    copy:
-      src: mac80211.conf
-      dest: /etc/modprobe.d/mac80211.conf
-
-  - name: copy xradio_wlan conf
-    copy:
-      src: xradio_wlan.conf
-      dest: /etc/modprobe.d/xradio_wlan.conf
-
-
-  - shell: depmod -ae ; update-initramfs -u
-
   - lineinfile:
       path: /etc/overlayroot.conf
       regexp: '^overlayroot='

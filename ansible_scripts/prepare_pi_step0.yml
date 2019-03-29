@@ -14,14 +14,14 @@
       src: reduce-timeout.conf
       dest: /etc/systemd/system/networking.service.d/reduce-timeout.conf
 
-  - name: install keys, add universe repo, update, upgrade
-    shell: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8B48AD6246925553 7638D0442B90D010 04EE7237B7D453EC && sudo add-apt-repository universe && sudo apt-get update && sudo apt-get -y upgrade
+  - name: update, upgrade
+    shell: sudo apt-get update && sudo apt-get -y upgrade
   
   - name: make sure bluez apt package removed
-    shell: sudo apt-get purge bluez
+    shell: sudo apt-get purge -y bluetooth pi-bluetooth bluez bluez-firmware
 
   - name: install apt packages
-    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject overlayroot
+    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject
 
   - name: install pip packages
     shell: sudo pip install nose2 pyserial paho-mqtt
