@@ -9,7 +9,7 @@ exit_if_failed() {
 
 START_DIR=$(pwd)
 
-python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p3:/config,/dev/mmcblk0p4:/data
+python format_on_error_and_mount.py --dev_to_dir_list /dev/disk/by-label/config:/config,/dev/disk/by-label/data:/data
 exit_if_failed
 
 mkdir -p /config/bluetooth
