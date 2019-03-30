@@ -9,7 +9,7 @@
     shell: mkdir -p /config ; mkdir -p /data
 
   - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && nose2 -F --quiet
+    shell: cd "{{ home }}/ecodroidgps" && sudo pytest
 
   - name: prepare bluetooth folder link in mounted dev to store pairing info
     shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -s /config/bluetooth /var/lib/bluetooth
@@ -21,9 +21,3 @@
       path: /etc/systemd/journald.conf
       regexp: '^Storage='
       line: 'Storage=volatile'
-
-  - lineinfile:
-      path: /etc/overlayroot.conf
-      regexp: '^overlayroot='
-      line: 'overlayroot="tmpfs"'
-

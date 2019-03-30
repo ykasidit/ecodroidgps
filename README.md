@@ -33,8 +33,10 @@ admin ALL=(ALL) NOPASSWD: ALL
 DEV and build
 -------------
 
-TODO: ./build_and_scp_to_dev.sh scp to pi, cython build there, scp so back, rm whole folder
+TODO: ./build_and_scp_to_dev.sh scp to pi, cython build there, scp so back, rm whole folder? or mount nw drive into pi insted
 TODO: rpizerow: build/temp.linux-armv6l-2.7
+
+- see also: https://github.com/alexellis/docker-arm/issues/19
 
 - edit files here in host, git commit in host this repo
 - to build enter docker container first:

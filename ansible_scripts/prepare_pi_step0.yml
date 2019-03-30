@@ -17,8 +17,8 @@
   - name: update, upgrade
     shell: sudo apt-get update && sudo apt-get -y upgrade
   
-  - name: make sure bluez apt package removed
-    shell: sudo apt-get purge -y bluetooth pi-bluetooth bluez bluez-firmware
+  - name: make sure bluez installed - we need hciuart working for internal pi bt powerup first then install our recompiled bluez over it
+    shell: sudo apt-get install -y bluetooth pi-bluetooth bluez bluez-firmware
 
   - name: install apt packages
     shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject

@@ -42,7 +42,7 @@ def do(mlist):
             
             if ret != 0:
                 print "mount failed - try format:"                
-                cmd = "mkfs.ext4 {}".format(pdev)
+                cmd = "mkfs.ext4 -F {} -L {}".format(pdev, os.path.basename(mdir))
                 ret = run_cmd(cmd)
                 if ret != 0:
                     raise Exception("try fix partition by format failed ret: {}".format(ret))

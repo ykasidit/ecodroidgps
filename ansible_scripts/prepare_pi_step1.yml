@@ -5,6 +5,9 @@
     
   tasks:
 
+  - name: prepare musl for ldd of edg cython so compiled from armhf/arm32v6 alpine to load correctly
+    shell: sudo apt-get -y install musl && cd /lib && sudo ln -s ld-musl-armhf.so.1 libc.musl-armhf.so.1 ; echo done
+
   - name: install/update bluez-compassion
     git:
       repo: 'https://github.com/ykasidit/bluez-compassion.git'
@@ -19,9 +22,6 @@
       clone: yes
       update: yes
 
-  - name: test bluez-gatt-server
-    shell: cd "{{ home }}/bluez-gatt-server" && nose2
-
   - name: install micropygps
     git:
       repo: https://github.com/ykasidit/micropyGPS-python2.git
@@ -35,4 +35,7 @@
       dest: "{{ home }}/ecodroidgps"
       clone: yes
       update: yes
+
+  - name: test bluez-gatt-server
+    shell: cd "{{ home }}/bluez-gatt-server" && nose2
 
