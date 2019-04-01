@@ -1,23 +1,48 @@
 - hosts: pi
-  become: yes
+  become: no
   vars:
     home: /home/admin
     
   tasks:
 
-  - name: ensure mount point dirs exist - test ecodroidgps would mount
-    shell: mkdir -p /config ; mkdir -p /data
+  - name: TODO: add admin user with edl12345 pass
+  - name: TODO: apt-get install other dependedncies pandas etc see cython branch
+  - name: TODO: add networktimeout for fast no-wifi boot see cython-master branch
 
-  - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && sudo pytest
+  - name: install pip packages
+    shell: sudo pip install nose2 pyserial paho-mqtt
 
-  - name: prepare bluetooth folder link in mounted dev to store pairing info
-    shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -s /config/bluetooth /var/lib/bluetooth
+  - name: prepare musl for ldd of edg cython so compiled from armhf/arm32v6 alpine to load correctly
+    shell: sudo apt-get -y install musl && cd /lib && sudo ln -s ld-musl-armhf.so.1 libc.musl-armhf.so.1 ; echo done
 
-  - name: install ecodroidgps service
-    shell: cd "{{ home }}/ecodroidgps" && ./install_service.sh
+  - name: install/update bluez-compassion
+    git:
+      repo: 'https://github.com/ykasidit/bluez-compassion.git'
+      dest: "{{ home }}/bluez-compassion"
+      clone: yes
+      update: yes
 
-  - lineinfile:
-      path: /etc/systemd/journald.conf
-      regexp: '^Storage='
-      line: 'Storage=volatile'
+  - name: install/update bluez-gatt-server
+    git:
+      repo: 'https://github.com/ykasidit/bluez-gatt-server.git'
+      dest: "{{ home }}/bluez-gatt-server"
+      clone: yes
+      update: yes
+
+  - name: install micropygps
+    git:
+      repo: https://github.com/ykasidit/micropyGPS-python2.git
+      dest: "{{ home }}/micropyGPS-python2"
+      clone: yes
+      update: yes
+
+  - name: install ecodroidgps
+    git:
+      repo: https://gitlab.com/ykasidit/ecodroidgps_bin.git
+      dest: "{{ home }}/ecodroidgps"
+      clone: yes
+      update: yes
+
+  - name: test bluez-gatt-server
+    shell: cd "{{ home }}/bluez-gatt-server" && nose2
+

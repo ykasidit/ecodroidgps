@@ -1,14 +1,17 @@
-* identify galileo, beidou, gnss, glonass in u-center and nmea
-  - reply aussie email
-  - conf disable le
-  - after got date/time - save nmea into tar.gz into gpx file
-  - test powerbank how long
+- new fresh install
+  - get ori main.conf - disable resolve name of connected dev
+  - set class
+  - check after run only top name is changed not resolv name
 
-* ecodroidgps lite - in same g-receiver box, solar powered?
+- get bluez 5.50 working with internal rpizerow bt
+- see ansible all steps pass
+- test android normaly mode
+- test android normal mode multiconn
+- test ble mode
+- file method to enable disable serial mode, ble mode
+- make ecodroidgps_config folder in /boot, no neeed /config partition - dont auto fix/reflash /config as license is in there
 
-* restore ecodroidgps.service and start.sh from pi
-
-- set gatt device name + BLE
+- set gatt device name
 
 - reduce debug print level
 

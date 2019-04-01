@@ -1,47 +1,18 @@
 - hosts: pi
   become: yes
   vars:
-    home: /home/admin
+    home: /home/pi
     bluez_url: http://www.kernel.org/pub/linux/bluetooth/bluez-5.50.tar.xz
     bluez_target_dir: "{{ home }}/bluez-5.50"
     
   tasks:
 
-  - shell: mkdir -p /etc/systemd/system/networking.service.d
-
-  - name: copy reduce-timeout.conf
-    copy:
-      src: reduce-timeout.conf
-      dest: /etc/systemd/system/networking.service.d/reduce-timeout.conf
-
   - name: update, upgrade
     shell: sudo apt-get update && sudo apt-get -y upgrade
   
-  - name: make sure bluez installed - we need hciuart working for internal pi bt powerup first then install our recompiled bluez over it
-    shell: sudo apt-get install -y bluetooth pi-bluetooth bluez bluez-firmware
-
   - name: install apt packages
-    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev autoconf emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev mosquitto mosquitto-clients python-gobject
+    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev
 
-  - name: install pip packages
-    shell: sudo pip install nose2 pyserial paho-mqtt
-
-  - name: mod mosquitto conf
-    shell: sudo sed -i "s/persistence true/persistence false/g" /etc/mosquitto/mosquitto.conf ; systemctl enable mosquitto && systemctl start mosquitto
-
-  - lineinfile:
-      path: /etc/mosquitto/mosquitto.conf
-      regexp: '^persistence'
-      line: 'persistence false'
-
-  - lineinfile:
-      path: /etc/mosquitto/mosquitto.conf
-      regexp: '^log_dest'
-      line: 'log_dest none'
-
-  - name: check mosquitto conf
-    shell: grep "persistence false" /etc/mosquitto/mosquitto.conf
- 
   - name: mkdir bluez_target_dir
     file:
       path: "{{ bluez_target_dir }}"
@@ -51,24 +22,47 @@
     unarchive:
       src: "{{ bluez_url }}"
       dest: "{{ home }}"
-      remote_src: yes
+T      remote_src: yes
 
   - name: bluez configure make make install
-    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var && make && sudo make install"
+    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-cups --disable-hid --disable-hog && make -j4 && sudo make install"
     args:
       executable: /bin/bash
 
-  - name: bluetoothctl enable and start
-    shell: systemctl daemon-reload && systemctl enable bluetooth && systemctl start bluetooth
+  - lineinfile:
+      path:  /etc/bluetooth/main.conf
+      regexp: '^(#Name =|Name =)'
+      line: Name = EcoDroidGPS Bluetooth GPS
+
+  - lineinfile:
+      path:  /lib/systemd/system/bluetooth.service
+      regexp: '^ExecStart'
+      line: ExecStart=/usr/libexec/bluetooth/bluetoothd --noplugin=wiimote,battery,hostname
+
+
+  - name: bluetoothd binary link to new one, systemctl daemon-reload to reload/apply newly installed bluetooth.service that would use the compiled /usr/libexec/bluetooth/bluetoothd instead of the original /usr/lib/bluetooth/bluetoothd
+    shell:  sudo cp /usr/lib/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd-prev && sudo ln -sf /usr/libexec/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd && systemctl daemon-reload && systemctl restart bluetooth
+
+  - name: check bluetooth service active
+    shell: systemctl is-active bluetooth
+
+  - name: bluetoothd ver check
+    shell: bluetoothd -v | grep 5.50
+    args:
+      executable: /bin/bash
 
   - name: bluetoothctl ver check
     shell: bluetoothctl -v | grep 5.50
     args:
       executable: /bin/bash
 
-  - shell: systemctl is-active bluetooth
+  - name: btmgmt check device present
+    shell: btmgmt info | grep addr | grep class
+    args:
+      executable: /bin/bash
 
-  
+  - name: btmgmt check correct dev name applied
+    shell: btmgmt info | grep 'name EcoDroidGPS Bluetooth GPS'
+    args:
+      executable: /bin/bash
 
-    
-    
