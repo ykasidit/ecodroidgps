@@ -5,11 +5,11 @@
     
   tasks:
 
-  - name: ensure mount point dirs exist - test ecodroidgps would mount
-    shell: mkdir -p /config ; mkdir -p /data
+  - name: ensure mount point dirs exist - 'pytest' in ecodroidgps dir would mount /data
+    shell: mkdir -p /data
 
   - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && sudo pytest
+    shell: cd "{{ home }}/ecodroidgps" && pytest
 
   - name: prepare bluetooth folder link in mounted dev to store pairing info
     shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -s /config/bluetooth /var/lib/bluetooth

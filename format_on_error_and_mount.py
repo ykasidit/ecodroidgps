@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import traceback
+import ecodroidgps_server
 
 
 def run_cmd(cmd):
@@ -10,6 +11,28 @@ def run_cmd(cmd):
     ret = os.system(cmd)
     print "run cmd ret:", ret
     return ret
+
+
+def backup_and_restore_license_file():
+    tandem_dir = "/data"
+    license_backup_fp = os.path.join(tandem_dir, os.path.basename(ecodroidgps_server.LICENSE_PATH))
+    if os.path.isfile(ecodroidgps_server.LICENSE_PATH):
+        print 'license file exists - backup now'
+        cp_to_bk_cmd = '''cp "{}" "{}" '''.format(ecodroidgps_server.LICENSE_PATH, license_backup_fp)
+        cp_to_bk_ret = os.system(cp_to_bk_cmd)
+        print 'cp_to_bk_ret:', cp_to_bk_ret
+        return cp_to_bk_ret
+    else:
+        print 'license file NOT exists - try restore now'
+        print 'start restore old license...'
+        cp_from_bk_cmd = '''cp "{}" "{}" && sync '''.format(license_backup_fp, ecodroidgps_server.LICENSE_PATH)
+        cp_from_bk_ret = os.system(cp_from_bk_cmd)
+        print 'cp_from_bk_ret:', cp_from_bk_ret
+        if cp_from_bk_ret == 0:
+            print 'license restore from backup success'            
+        else:
+            print 'license restore from backup failed'
+        return cp_from_bk_ret
 
 
 def do(mlist):
@@ -40,8 +63,8 @@ def do(mlist):
             mount_cmd = "mount -t ext4 {} {}".format(pdev, mdir)
             ret = run_cmd(mount_cmd)
             
-            if ret != 0:
-                print "mount failed - try format:"                
+            if ret != 0:                
+                print "mount failed - format it now..."
                 cmd = "mkfs.ext4 -F {} -L {}".format(pdev, os.path.basename(mdir))
                 ret = run_cmd(cmd)
                 if ret != 0:
@@ -51,6 +74,7 @@ def do(mlist):
 
             if ret == 0:
                 print "mount success for part:", part
+                backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")
         except:

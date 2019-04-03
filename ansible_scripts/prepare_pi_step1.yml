@@ -3,6 +3,9 @@
     
   tasks:
 
+  - name: install apt packages
+    shell: sudo apt-get install -y mosquitto mosquitto-clients
+
   - name: mod mosquitto conf
     shell: sudo sed -i "s/persistence true/persistence false/g" /etc/mosquitto/mosquitto.conf ; systemctl enable mosquitto && systemctl start mosquitto
 

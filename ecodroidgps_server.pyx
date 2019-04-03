@@ -24,8 +24,10 @@ import pandas as pd
 import edg_utils
 import edg_gps_parser
 from dl_lic import dl_lic
+import format_on_error_and_mount
 
 # make sure bluez-5.46 is in folder next to this folder
+LICENSE_PATH="/config/edg.lic"
 
 
 def get_bdaddr():
@@ -286,6 +288,7 @@ def keep_cmds_running(cmds):
         
 
 def stage0_check(mac_addr, bdaddr):
+    format_on_error_and_mount.backup_and_restore_license_file()
     print "stage0 mac_addr:", mac_addr
     this_sha = None
     this_sha0 = None
@@ -304,7 +307,7 @@ def stage0_check(mac_addr, bdaddr):
         this_sha0 = shaer0.hexdigest()
         this_sha = shaer.hexdigest()
     #print "this_sha:", this_sha
-    licfp = "/config/edg.lic"
+    licfp = LICENSE_PATH
     lic_pass = False
     with open(licfp, "r") as f:        
         lic_lines = f.readlines()
@@ -417,10 +420,10 @@ def main():
 
     if ret != 0:
         print 'try dl lic now...'
-        cmdret = dl_lic(mac_addr, bdaddr, "/config/edg.lic")
+        cmdret = dl_lic(mac_addr, bdaddr, LICENSE_PATH)
         print "try dl lic cmdret:", cmdret
         if cmdret == 0:
-            print 'recheck stage0'
+            print 'recheck stage0 after dl_lic()...'
             ret = stage0_check(mac_addr, bdaddr)
 
     if ret == 0:

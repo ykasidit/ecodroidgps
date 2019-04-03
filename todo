@@ -1,23 +1,18 @@
-- new fresh install
-  - get ori main.conf - disable resolve name of connected dev
-  - set class
-  - check after run only top name is changed not resolv name
-
-- get bluez 5.50 working with internal rpizerow bt
+- restore /config for connected bt device list - copy to /config/edg.lic to /tmp before format, copy it back after format
 - see ansible all steps pass
 - test android normaly mode
+- readonly
+- set class check btmgmt info same as our target in /etc/bluetooth/main.conf
+- pairing: clear /conf/bluetooth test bluetooth pair stays, reboot make sure it stays see bluetoothctl or try connect
 - test android normal mode multiconn
 - test ble mode
 - file method to enable disable serial mode, ble mode
-- make ecodroidgps_config folder in /boot, no neeed /config partition - dont auto fix/reflash /config as license is in there
-
 - set gatt device name
 
 - reduce debug print level
 
 - test well
 
-- clear /conf/bluetooth test bluetooth pair stays, reboot make sure it stays see bluetoothctl or try connect
 
 - license flask service read gsheets
 

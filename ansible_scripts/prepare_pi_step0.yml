@@ -7,11 +7,14 @@
     
   tasks:
 
+  # build and install bluez 5.50 on top of 5.43 in 2018-11-13-raspbian-stretch-lite.img
+  # working steps credit to https://github.com/RuckerGauge/Raspberry-Pi-Zero-W-Bluez-5.50-upgrade-steps
+
   - name: update, upgrade
-    shell: sudo apt-get update && sudo apt-get -y upgrade
+    shell: apt-get update &&  apt-get -y upgrade
   
   - name: install apt packages
-    shell: sudo apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev
+    shell:  apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev
 
   - name: mkdir bluez_target_dir
     file:
@@ -22,10 +25,10 @@
     unarchive:
       src: "{{ bluez_url }}"
       dest: "{{ home }}"
-T      remote_src: yes
+      remote_src: yes
 
   - name: bluez configure make make install
-    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-cups --disable-hid --disable-hog && make -j4 && sudo make install"
+    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-cups --disable-a2dp --disable-avrcp --disable-network --disable-hid --disable-hog && make -j4 &&  make install"
     args:
       executable: /bin/bash
 
@@ -34,14 +37,20 @@ T      remote_src: yes
       regexp: '^(#Name =|Name =)'
       line: Name = EcoDroidGPS Bluetooth GPS
 
+  # positioning;misc from http://bluetooth-pentest.narod.ru/software/bluetooth_class_of_device-service_generator.html
+  - lineinfile:
+      path:  /etc/bluetooth/main.conf
+      regexp: '^(##Class =|#Class =)'
+      line: Class = 0x10000
+
   - lineinfile:
       path:  /lib/systemd/system/bluetooth.service
       regexp: '^ExecStart'
-      line: ExecStart=/usr/libexec/bluetooth/bluetoothd --noplugin=wiimote,battery,hostname
+      line: ExecStart=/usr/libexec/bluetooth/bluetoothd --noplugin=wiimote,battery,deviceinfo,hostname
 
 
   - name: bluetoothd binary link to new one, systemctl daemon-reload to reload/apply newly installed bluetooth.service that would use the compiled /usr/libexec/bluetooth/bluetoothd instead of the original /usr/lib/bluetooth/bluetoothd
-    shell:  sudo cp /usr/lib/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd-prev && sudo ln -sf /usr/libexec/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd && systemctl daemon-reload && systemctl restart bluetooth
+    shell:   cp /usr/lib/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd-prev && ln -sf /usr/libexec/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd && systemctl daemon-reload && systemctl restart bluetooth
 
   - name: check bluetooth service active
     shell: systemctl is-active bluetooth

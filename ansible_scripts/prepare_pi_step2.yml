@@ -1,48 +1,22 @@
 - hosts: pi
-  become: no
+  become: yes
   vars:
     home: /home/admin
     
   tasks:
 
-  - name: TODO: add admin user with edl12345 pass
-  - name: TODO: apt-get install other dependedncies pandas etc see cython branch
-  - name: TODO: add networktimeout for fast no-wifi boot see cython-master branch
+  - name: create admin user
+    user:
+      name: admin
+      home: "{{ home }}"
+      password: $6$OjRCvbjSZAF2J$TNkm/B6HCjr1PArGd7OTILT/0JZzTkTxq6ob6tKO6b1qLuKHyPFfvh4pslJ7eMXqwkewMTaU6MNBm2tiHIxdc.
+      shell: /bin/bash
+
+  - name: install required apt packages
+    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl
 
   - name: install pip packages
-    shell: sudo pip install nose2 pyserial paho-mqtt
+    shell: pip install pyserial paho-mqtt pytest
 
   - name: prepare musl for ldd of edg cython so compiled from armhf/arm32v6 alpine to load correctly
-    shell: sudo apt-get -y install musl && cd /lib && sudo ln -s ld-musl-armhf.so.1 libc.musl-armhf.so.1 ; echo done
-
-  - name: install/update bluez-compassion
-    git:
-      repo: 'https://github.com/ykasidit/bluez-compassion.git'
-      dest: "{{ home }}/bluez-compassion"
-      clone: yes
-      update: yes
-
-  - name: install/update bluez-gatt-server
-    git:
-      repo: 'https://github.com/ykasidit/bluez-gatt-server.git'
-      dest: "{{ home }}/bluez-gatt-server"
-      clone: yes
-      update: yes
-
-  - name: install micropygps
-    git:
-      repo: https://github.com/ykasidit/micropyGPS-python2.git
-      dest: "{{ home }}/micropyGPS-python2"
-      clone: yes
-      update: yes
-
-  - name: install ecodroidgps
-    git:
-      repo: https://gitlab.com/ykasidit/ecodroidgps_bin.git
-      dest: "{{ home }}/ecodroidgps"
-      clone: yes
-      update: yes
-
-  - name: test bluez-gatt-server
-    shell: cd "{{ home }}/bluez-gatt-server" && nose2
-
+    shell: cd /lib && ln -sf ld-musl-armhf.so.1 libc.musl-armhf.so.1
