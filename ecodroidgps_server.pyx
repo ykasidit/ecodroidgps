@@ -376,11 +376,22 @@ def alloc_gps_data_queues_dict():
     }
 
 
+def get_mac_addr():
+    mac_addr = None
+    try:
+        mac_addr = get_iface_addr("eth0")
+    except:
+        try:
+            mac_addr = get_iface_addr("wlan0")
+        except:
+            mac_addr = get_iface_addr("wlp4s0")
+            
+    return mac_addr
+
+
 ############### MAIN
 
 def main():
-
-    print "hello"
 
     print infostr
 
@@ -395,12 +406,8 @@ def main():
 
 
     # try not power on: power_on_bt_dev(args)  # need to power on before can get bt addr
-    mac_addr = None
+    mac_addr = get_mac_addr()
     bdaddr = get_bdaddr()
-    try:
-        mac_addr = get_iface_addr("eth0")
-    except:
-        mac_addr = get_iface_addr("wlp4s0")
 
     if mac_addr is None:
         print "INVALID: failed to get mac_addr"

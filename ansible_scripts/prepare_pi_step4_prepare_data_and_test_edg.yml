@@ -5,8 +5,8 @@
     
   tasks:
 
-  - name: ensure mount point dirs exist - 'pytest' in ecodroidgps dir would mount /data
-    shell: mkdir -p /data
+  - name: ensure mount point dirs exist - 'pytest' in ecodroidgps dir would mount to /data and to /config
+    shell: mkdir -p /data ; mkdir -p /config
 
   - name: test ecodroidgps
     shell: cd "{{ home }}/ecodroidgps" && pytest

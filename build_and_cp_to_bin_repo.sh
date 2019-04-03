@@ -23,8 +23,10 @@ cp start.sh ../ecodroidgps_bin
 exit_if_failed
 cp set_class.sh ../ecodroidgps_bin
 exit_if_failed
+rm ../ecodroidgps_bin/*.so
 cp *.so ../ecodroidgps_bin
 exit_if_failed
+rm ../ecodroidgps_bin/*.py
 cp *.py ../ecodroidgps_bin
 exit_if_failed
 rm ../ecodroidgps_bin/gen_edg_lic.py
