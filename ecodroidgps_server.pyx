@@ -4,7 +4,7 @@ import subprocess
 import sys
 import time
 import os
-import logging.handlers
+#import logging.handlers
 import argparse
 import traceback
 import multiprocessing
@@ -76,7 +76,7 @@ read input from gps chardev, keep at a central var, send input to each subproces
 
 """
 
-
+'''
 g_logger = None
 def init_logger():
     global g_logger
@@ -90,14 +90,17 @@ def init_logger():
         print "WARNING: init_logger() exception: ", str(e)
 
 init_logger()
-        
+'''
+
 def printlog(*s):
-    global g_logger
+    #global g_logger
     s = str(s)
+    '''
     try:
         g_logger.info(s)
     except:
         pass
+    '''
     print(s)
 
 

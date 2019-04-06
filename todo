@@ -1,3 +1,14 @@
+* bash nmea to mqtt_pub service - if py cpu still too high and saw case mqtt pub fail
+ -- or use old system cpu still can work
+
+- cpu optimize less debug prints
+- save nmea, stdout stderr, parsed gps location to log - or to sqlite?
+  - last_notime.*.gz
+  - <datetime>.*.gz
+  - ex: <datetime>_nmea.txt.gz
+  - ex: <datetime>_syslog.txt.gz
+  - ex: <datetime>_location.kml.gz
+
 - restore /config for connected bt device list - copy to /config/edg.lic to /tmp before format, copy it back after format
 - see ansible all steps pass
 - test android normaly mode

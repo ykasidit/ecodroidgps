@@ -76,21 +76,21 @@ def parse(shared_gps_data_queues_dict):
 
 
 def parse_nmea(my_gps, str nmea):
-    print "parse_nmea:", nmea
+    #print "parse_nmea:", nmea
     # parse it
     for char in nmea:
         my_gps.update(char)
 
     ###### post parse hooks
     # populate ble location and speed chrc
-    print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
+    #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
     chrc_bytes = gen_ble_location_and_speed_chrc_bytes(my_gps)
     if chrc_bytes is not None:
         hexstr = str(chrc_bytes).encode("hex")
-        print "chrc_bytes valid: {}".format(hexstr)
+        #print "chrc_bytes valid: {}".format(hexstr)
         if "GGA" in nmea:
             ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
-            print "mqtt pub ret:", ret
+            #print "mqtt pub ret:", ret
     else:
         print "chrc_bytes none:", chrc_bytes
                     
@@ -113,12 +113,12 @@ def gen_ble_location_and_speed_chrc_bytes(my_gps):
 
     payload_buffer = None
 
-    print "len(las_gen_funcs):", len(las_gen_funcs)
+    #print "len(las_gen_funcs):", len(las_gen_funcs)
 
     payload_list = []
 
     for func in las_gen_funcs:
-        print "call func:", func
+        #print "call func:", func
         try:
             ret = func(flag_bit_list, my_gps)
             if ret is not None:
@@ -131,23 +131,23 @@ def gen_ble_location_and_speed_chrc_bytes(my_gps):
     if len(payload_list):
         payload_buffer = np.getbuffer(np.concatenate(payload_list))
 
-    print "payload_buffer:", payload_buffer
+    #print "payload_buffer:", payload_buffer
     
     if len(flag_bit_list) and payload_buffer is not None:
 
-        print "prepare chrc: flag_bit_list:", flag_bit_list
+        #print "prepare chrc: flag_bit_list:", flag_bit_list
 
         # gen flags
         flags = np.uint16(0)
             
         for bit_offset in flag_bit_list:
-            print "las chrc flags turn on bit:", bit_offset
+            #print "las chrc flags turn on bit:", bit_offset
             flags = bit_utils.set_bit(flags, bit_offset)
 
-        print "flags val hex:  %02x" % flags
+        #print "flags val hex:  %02x" % flags
         # return buffer of flags and payload_buffer (payload)
         flag_buffer = np.getbuffer(np.uint16(flags))
-        print "flag_buffer:", str(flag_buffer).encode("hex")
+        #print "flag_buffer:", str(flag_buffer).encode("hex")
         ret = np.getbuffer(np.concatenate([flag_buffer, payload_buffer]))
         return ret
     else:
@@ -177,13 +177,13 @@ def gen_elevation(flag_bit_list, my_gps):
 def gen_inst_speed(flag_bit_list, my_gps):
     ### instantaneous_speed
     # Current speed is stored in a tuple of values representing knots, miles per hours and kilometers per hour
-    print "my_gps.speed len:", len(my_gps.speed)
+    #print "my_gps.speed len:", len(my_gps.speed)
     kph = my_gps.speed[2]
 
-    print "km/h:", kph
+    #print "km/h:", kph
     
     meters_per_second = (float(kph)*1000.0)/3600.0
-    print "meters_per_second:", meters_per_second
+    #print "meters_per_second:", meters_per_second
 
     # Unit is in meters per second with a resolution of 1/100
     meters_per_second *= 100.0
@@ -209,8 +209,8 @@ def gen_position_status_and_location(flag_bit_list, my_gps):
         # TODO: prepare location buffer
         lat = (my_gps.latitude[0] + (my_gps.latitude[1]/60.0)) * (1.0 if my_gps.latitude[2] == 'N' else -1.0)
         lon = (my_gps.longitude[0] + (my_gps.longitude[1]/60.0)) * (1.0 if my_gps.longitude[2] == 'E' else -1.0)
-        print "deg lat:", lat
-        print "deg lon:", lon
+        #print "deg lat:", lat
+        #print "deg lon:", lon
 
         lat *= LAT_LON_RESOLUTION_MULTIPLIER
         lon *= LAT_LON_RESOLUTION_MULTIPLIER
