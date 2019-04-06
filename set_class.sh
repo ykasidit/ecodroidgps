@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 set timeout 10
 
-spawn ../bluez/tools/btmgmt
+spawn btmgmt
 
 expect "#"
 sleep 1

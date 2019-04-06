@@ -74,6 +74,8 @@ def do(mlist):
 
             if ret == 0:
                 print "mount success for part:", part
+                if part == "config":
+                    os.system("mkdir -p /config/bluetooth")  # for bluez to save pair info
                 backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")

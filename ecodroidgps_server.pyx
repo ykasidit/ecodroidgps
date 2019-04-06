@@ -28,6 +28,7 @@ import format_on_error_and_mount
 
 # make sure bluez-5.46 is in folder next to this folder
 LICENSE_PATH="/config/edg.lic"
+CONFIG_NO_BLE_MODE = "/config/no_ble"
 
 
 def get_bdaddr():
@@ -249,7 +250,15 @@ def prepare_bt_device(args):
         chrc_csv_path
     )
 
-    p = multiprocessing.Process( target=keep_cmds_running, args=([edl_agent_cmd, ble_lnp_cmd],) )
+    cmd_list = [edl_agent_cmd]
+
+    if os.path.isfile(CONFIG_NO_BLE_MODE):
+        print 'CONFIG_NO_BLE_MODE flagged so not starting ble_lnp_cmd, flag path:', CONFIG_NO_BLE_MODE
+    else:
+        print 'CONFIG_NO_BLE_MODE NOT flagged so starting ble_lnp_cmd normally, flag path:', CONFIG_NO_BLE_MODE
+        cmd_list += [ble_lnp_cmd]
+
+    p = multiprocessing.Process( target=keep_cmds_running, args=(cmd_list,) )
     p.start()
 
     # TODO start the ble service
@@ -454,6 +463,7 @@ def main():
         target=edg_gps_parser.parse,
         args=(shared_gps_data_queues_dict,)
     )
+    
     gps_parser_proc.start()
 
     ###

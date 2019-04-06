@@ -12,7 +12,7 @@
     shell: cd "{{ home }}/ecodroidgps" && pytest
 
   - name: prepare bluetooth folder link in mounted dev to store pairing info
-    shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -s /config/bluetooth /var/lib/bluetooth
+    shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -sf /config/bluetooth /var/lib/bluetooth
 
   - name: install ecodroidgps service
     shell: cd "{{ home }}/ecodroidgps" && ./install_service.sh
@@ -21,3 +21,5 @@
       path: /etc/systemd/journald.conf
       regexp: '^Storage='
       line: 'Storage=volatile'
+
+  - shell: sudo systemctl disable rsyslog ; sudo systemctl stop rsyslog ; echo done

@@ -1,38 +1,11 @@
-* bash nmea to mqtt_pub service - if py cpu still too high and saw case mqtt pub fail
- -- or use old system cpu still can work
+- usb test raw RTK-LIB mode
 
-- cpu optimize less debug prints
-- save nmea, stdout stderr, parsed gps location to log - or to sqlite?
-  - last_notime.*.gz
-  - <datetime>.*.gz
-  - ex: <datetime>_nmea.txt.gz
-  - ex: <datetime>_syslog.txt.gz
-  - ex: <datetime>_location.kml.gz
+- log GPX data to /data/<date_time>.gpx
+  - auto delete oldest until at least 100 MB space left
 
-- restore /config for connected bt device list - copy to /config/edg.lic to /tmp before format, copy it back after format
-- see ansible all steps pass
-- test android normaly mode
-- readonly
-- set class check btmgmt info same as our target in /etc/bluetooth/main.conf
-- pairing: clear /conf/bluetooth test bluetooth pair stays, reboot make sure it stays see bluetoothctl or try connect
-- test android normal mode multiconn
-- test ble mode
-- file method to enable disable serial mode, ble mode
-- set gatt device name
-
-- reduce debug print level
-
-- test well
-
-
+- now turn off lic service after done
 - license flask service read gsheets
 
-python test_parse_gps.py
-- rm debug prints
-- mqtt pub through api?
-- test on real dev
-
-* log all nmea to .txt.gz - if param provided
 
 ---
 

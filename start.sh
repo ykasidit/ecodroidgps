@@ -14,6 +14,9 @@ exit_if_failed
 
 mkdir -p /config/bluetooth
 
+systemctl restart bluetooth
+exit_if_failed
+
 systemctl is-active bluetooth
 exit_if_failed
 
