@@ -17,7 +17,7 @@ class Profile(dbus.service.Object):
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="o", out_signature="")
     def RequestDisconnection(self, device):
-        bt_spp_funcs.on_req_disconnection(self, path)
+        bt_spp_funcs.on_req_disconnection(self, device)
 
     @dbus.service.method("org.bluez.Profile1",
                          in_signature="oha{sv}", out_signature="")

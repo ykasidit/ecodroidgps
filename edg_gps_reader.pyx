@@ -2,10 +2,11 @@ import time
 import traceback
 import sys
 import serial
-import math
 import edg_utils
 
 MAX_GPS_DATA_QUEUE_LEN = 100
+BAUD_RATE=230400
+MAX_READ_BUFF_SIZE = 256
 
 
 def read_gps(gps_chardev_prefix, gps_data_queues_dict):
@@ -15,6 +16,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
     q_list = gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = gps_data_queues_dict["q_list_used_indexes_mask"]
     q_list_used_indexes_mask_mutex = gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
+    global_write_queue = gps_data_queues_dict["global_write_queue"]
 
     while True:
 
@@ -27,7 +29,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 dev = gps_chardev_prefix + str(acm)
                 print("read_gps: opening gps chardev:"+dev)
                 try:
-                    f = serial.Serial(dev, timeout=3)
+                    f = serial.Serial(dev, timeout=3, baudrate=BAUD_RATE)
                     print("read_gps: opening gps chardev:"+dev+" success")
                     break
                 except:
@@ -39,10 +41,23 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
             while True:
 
-                gps_data = f.readline()
+                gps_data = f.readline(MAX_READ_BUFF_SIZE)  # put MAX_READ_BUFF_SIZE in case of working in binary/RAW mode with u-center or RTK solutions that ordered raw dumps
                 # print("read_gps: read gps_data:", gps_data)
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
+
+                while True:
+                    wqsize = global_write_queue.qsize()
+                    if 0 == wqsize:
+                        break
+                    try:
+                        wbuf = global_write_queue.get_nowait()
+                        print "wqsize:", wqsize, "got wbuf:", wbuf
+                        f.write(wbuf)
+                        print "wbuf write to serial success"
+                    except Exception as e0:
+                        print("wbuf write to serial exception: {}".format(str(e0)))
+                    
 
                 n_connected_dev = 0
                 n_connected_dev_put_successfully = 0
@@ -74,7 +89,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                             n_connected_dev_put_successfully += 1
                         except Exception as e1:
                             print("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e1)))
-                    except Exception as e2:
+                    except Exception:
                         type_, value_, traceback_ = sys.exc_info()
                         exstr = str(traceback.format_exception(type_, value_, traceback_))
                         print("read_gps: append queue in q_list q_index{} exception: {}".format(q_index, exstr))

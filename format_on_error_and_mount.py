@@ -4,6 +4,7 @@ import sys
 import argparse
 import traceback
 import ecodroidgps_server
+import platform
 
 
 def run_cmd(cmd):
@@ -37,6 +38,11 @@ def backup_and_restore_license_file():
 
 def do(mlist):
     print "format_on_error_and_mount list:", mlist
+    print "platform.processor()", platform.processor()
+    if 'x86' in platform.processor():
+        print 'x86 dev pc dont format on error and mount...'
+        return 1
+    
     for part in mlist:
         try:
             print "checking part:", part
@@ -79,10 +85,12 @@ def do(mlist):
                 backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")
+            return 0
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))        
             print "WARNING: mount part: {} exception: {}".format(part, exstr)
+    return 2
 
 
 if __name__ == "__main__":
@@ -97,5 +105,7 @@ if __name__ == "__main__":
     )
     args = vars(parser.parse_args())
     mlist = args["dev_to_dir_list"].split(",")
-    do(mlist)
+    ret = do(mlist)
+    print 'do func ret:', ret
+    exit(ret)
     

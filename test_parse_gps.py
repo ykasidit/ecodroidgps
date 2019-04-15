@@ -1,9 +1,14 @@
 import edg_gps_parser
 from micropyGPS import MicropyGPS
+import data_logger
 
 
 def test():
     my_gps = MicropyGPS()
+
+    fnprefix_invalid = data_logger.get_utc_datetime_objfor_my_gps(my_gps, ret_str=True)
+    print 'fnprefix_invalid:', fnprefix_invalid
+    
     nmeas = None
     with open("ex_nmea.txt", "r") as f:
         nmeas = f.read().replace("\r","").split("\n")
@@ -25,19 +30,17 @@ def test():
     # $GNGGA,132840.00,1346.88722,N,10040.46293,E,1,09,0.90,002.7,M,-27.4,M,,*6F
     # 'GPGGA', '132840.00', '1346.88722', 'N', '10040.46293', 'E', '1', '09', '0.90', '002.7', 'M', '-27.4', 'M', '', '', '6F\n'
     
-    sets = [["$GNGGA,133717.00,1346.88458,N,10040.46074,E,2,12,0.91,-5.0,M,-27.4,M,,0000*43"]]
-    
-    for set in range(len(sets)):
-        nmeas = sets[set]
-        for nmea in nmeas:
-            edg_gps_parser.parse_nmea(my_gps, nmea)
+    for nmea in nmeas:
+        edg_gps_parser.parse_nmea(my_gps, nmea)
 
-        attrs = vars(my_gps)
-        # now dump this in some way or another
-        print ', '.join("%s: %s" % item for item in attrs.items())
-        print "set {} lat: {} lon: {}".format(set, my_gps.latitude, my_gps.longitude)
-
-        
+    attrs = vars(my_gps)
+    # now dump this in some way or another
+    print ', '.join("%s: %s" % item for item in attrs.items())
+    print "set {} lat: {} lon: {}".format(set, my_gps.latitude, my_gps.longitude)
+    dstr = data_logger.get_date_str_for_my_gps(my_gps)
+    print 'fn dstr:', dstr
+    dobj = data_logger.get_utc_datetime_objfor_my_gps(my_gps)
+    print 'fn dobj:', dobj ,'type:', type(dobj)
 
 
 

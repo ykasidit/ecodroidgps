@@ -4,6 +4,10 @@ import traceback
 import os
 import sys
 import inspect
+import data_logger
+from datetime import datetime
+import gpxpy
+import gpxpy.gpx
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -26,6 +30,7 @@ NMEA_FIX_3D = 3
 
 
 def parse(shared_gps_data_queues_dict):
+    print 'parse() start...'
     q_list = shared_gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
     q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
@@ -33,6 +38,25 @@ def parse(shared_gps_data_queues_dict):
     q_list_index = None  # remove from q_list_used_indexes_mask on exception
 
     q_list_index = bt_spp_funcs.get_q_list_avail_index(shared_gps_data_queues_dict)
+
+    logger_state_dict = {}
+    logger_state_dict['nmea_list'] = []
+    logger_state_dict['log_dir'] = "/data"
+    logger_state_dict['last_flush_datetime'] = datetime.now()
+
+    gpx = gpxpy.gpx.GPX()
+    gpx.creator = "Data logged by EcoDroidGPS Bluetooth GPS/GNSS Receiver -- http://www.ClearEvo.com -- GPX engine by gpx.py -- https://github.com/tkrajina/gpxpy"
+
+    # Create first track in our GPX:
+    gpx_track = gpxpy.gpx.GPXTrack()
+    gpx.tracks.append(gpx_track)
+    
+    # Create first segment in our GPX track:
+    gpx_segment = gpxpy.gpx.GPXTrackSegment()
+    gpx_track.segments.append(gpx_segment)
+
+    logger_state_dict['gpx'] = gpx
+    logger_state_dict['gpx_segment'] = gpx_segment    
 
     if q_list_index is None:
         raise Exception("ABORT: failed to get any unused queues in q_list")
@@ -44,6 +68,7 @@ def parse(shared_gps_data_queues_dict):
         
         while True:
             nmea = queue.get()
+            #print 'parser got nmea:', nmea
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")
 
@@ -60,6 +85,14 @@ def parse(shared_gps_data_queues_dict):
                     exstr = traceback.format_exception(type_, value_, traceback_)
                     print("WARNING: gps parse exception:", exstr)
                     my_gps = None  # so it will make new obj in next loop
+
+                logger_state_dict['my_gps'] = my_gps  # so logger_state_dict can get parsed values                    
+                try:
+                    data_logger.on_nmea(logger_state_dict, nmea)
+                except:
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = traceback.format_exception(type_, value_, traceback_)
+                    print("WARNING: log nmea exception:", exstr)
                     
                 
     except Exception as e:

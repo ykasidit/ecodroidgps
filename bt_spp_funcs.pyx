@@ -5,14 +5,12 @@ import multiprocessing as mp
 import traceback
 import edg_utils
 import math
-import time
-import socket
 
 
 # just keep on reading to avoid target device write buffer full issues - read data not used
 # remove q_list_index from q_list_used_indexes when done
 # add the (fd*-1) to queue when done to signal the writer process that this fd has been closed (otherwise writer blocks on get() forever or until the queue is reused and writes to old fd then exits
-def read_fd_until_closed(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue_to_add_fd_on_close_as_signal_to_writer_proc):
+def read_fd_until_closed(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue_to_add_fd_on_close_as_signal_to_writer_proc, global_write_queue):
     print("read_fd_until_closed: fd {} start".format(fd))
     READ_BUFF_SIZE = 2048
     try:
@@ -22,10 +20,16 @@ def read_fd_until_closed(connected_dev_dbus_path, fd, q_list_index, q_list_used_
             read = os.read(fd, READ_BUFF_SIZE)
             if not read is None:
                 print("read_fd_until_closed: fd {} read data: {}".format(fd, read))
+                try:
+                    global_write_queue.put_nowait(read)
+                except Exception:
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = traceback.format_exception(type_, value_, traceback_)
+                    print("read_fd_until_closed: fd {} global_write_queue.put_nowait(read) got exception: {}".format(fd, exstr))
             else:
                 print("read_fd_until_closed: fd {} read data none so ABORT")
                 break
-    except Exception as e:
+    except Exception:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
         print("read_fd_until_closed: fd {} got exception: {}".format(fd, exstr))
@@ -97,7 +101,7 @@ def write_nmea_from_queue_to_fd(connected_dev_dbus_path, queue, fd):
                 # print "write bt dev {} nmea [{}]".format(connected_dev_dbus_path, nmea)
                 os.write(fd, nmea)
                 
-    except Exception as e:
+    except Exception:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
         print("write_nmea_from_queue_to_fd: fd {} got exception: {}".format(fd, exstr))
@@ -188,7 +192,6 @@ def release_q_list_index(shared_gps_data_queues_dict, q_list_index):
     if q_list_index is None:
         raise Exception("invalid q_list_index none")
     
-    q_list = shared_gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
     q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
 
@@ -206,6 +209,7 @@ def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
     
     shared_gps_data_queues_dict = self.vars_dict["shared_gps_data_queues_dict"]
     q_list = shared_gps_data_queues_dict["q_list"]
+    global_write_queue = shared_gps_data_queues_dict["global_write_queue"]
     q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
     q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
 
@@ -243,7 +247,7 @@ def on_new_connection(self, connected_dev_dbus_path, dbus_fd, properties):
         print("started writer_proc for fd {}", fd)
 
         print("starting reader_proc for fd {}", fd)
-        reader_proc = mp.Process(target=read_fd_until_closed, args=(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue))
+        reader_proc = mp.Process(target=read_fd_until_closed, args=(connected_dev_dbus_path, fd, q_list_index, q_list_used_indexes_mask, q_list_used_indexes_mask_mutex, queue, global_write_queue))
         reader_proc.start()
         print("started reader_proc for fd {}", fd)
 

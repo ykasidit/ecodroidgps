@@ -1,17 +1,23 @@
 import os
 import ecodroidgps_server
 from dl_lic import dl_lic
+import platform
 
 RUN_CMD = "python format_on_error_and_mount.py --dev_to_dir_list /dev/disk/by-label/config:/config,/dev/disk/by-label/data:/data"
 
 
 def test():
 
+    if 'x86' in platform.processor():
+        print 'x86 dev pc dont format on error and mount...'
+        return 
+    
     # stop using /config and /data
     os.system('sudo systemctl stop ecodroidgps')
 
     # make sure they are mounted
     ret = os.system(RUN_CMD)
+    print "RUN_CMD ret:", ret
     assert ret == 0
 
     # dl lic if required

@@ -381,10 +381,13 @@ def alloc_gps_data_queues_dict():
     for i in range(MAX_N_GPS_DATAQUEUES):
         q_list.append(multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN))
 
+    global_write_queue = multiprocessing.Queue(maxsize=edg_gps_reader.MAX_GPS_DATA_QUEUE_LEN)
+        
     return {
-        "q_list":q_list,
+        "q_list":q_list,  # phone read queue list - bt_spp_funcs reads from this queue (populated by edg_gps_reader read from usb) and writes to phone
         "q_list_used_indexes_mask":q_list_used_indexes_mask,
         "q_list_used_indexes_mask_mutex":q_list_used_indexes_mask_mutex,
+        "global_write_queue": global_write_queue,  # one global write to usb queue - bt_spp_funcs reads buff written from phone and appends to this queue - edg_gps_reader checks if has entries then writes to usb
     }
 
 
