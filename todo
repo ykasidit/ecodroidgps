@@ -28,7 +28,12 @@ Aviailable kits
 
 ---
 
-- edg rpizerow
+- edg rpizerow:
+  - /config/config.txt
+  - 
+  - logging can enable by touch /config/log
+  - create 
+
   - dev baud 230400, readline(256) 
   - can write to dev
   - test u-center

@@ -8,6 +8,7 @@ import data_logger
 from datetime import datetime
 import gpxpy
 import gpxpy.gpx
+import ecodroidgps_server
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -44,6 +45,15 @@ def parse(shared_gps_data_queues_dict):
     logger_state_dict['log_dir'] = "/data"
     logger_state_dict['last_flush_datetime'] = datetime.now()
 
+    zip_older_nmea_cmd = ''' cd /data && find . -maxdepth 1 -name "*_nmea.txt" -exec bash -c "echo 'zipping {}' && zip {}.zip {} && rm {}" \; '''
+    zip_older_gpx_cmd = ''' cd /data && find . -maxdepth 1 -name "*.gpx" -exec bash -c "echo 'zipping {}' && zip {}.zip {} && rm {}" \; '''
+
+    ret = os.system(zip_older_nmea_cmd)
+    print 'zip_older_nmea_cmd ret:', ret
+    
+    os.system(zip_older_gpx_cmd)
+    print 'zip_older_gpx_cmd ret:', ret
+
     gpx = gpxpy.gpx.GPX()
     gpx.creator = "Data logged by EcoDroidGPS Bluetooth GPS/GNSS Receiver -- http://www.ClearEvo.com -- GPX engine by gpx.py -- https://github.com/tkrajina/gpxpy"
 
@@ -62,6 +72,8 @@ def parse(shared_gps_data_queues_dict):
         raise Exception("ABORT: failed to get any unused queues in q_list")
 
     queue = q_list[q_list_index]
+
+    update_ble_chrc = ecodroidgps_server.CONFIGS['ble'] == 1
     
     try:
         my_gps = None
@@ -79,7 +91,7 @@ def parse(shared_gps_data_queues_dict):
             if isinstance(nmea, str):                
                 
                 try:
-                    parse_nmea(my_gps, nmea)
+                    parse_nmea_and_update_ble_chrc(my_gps, nmea, update_ble_chrc=update_ble_chrc)
                 except:
                     type_, value_, traceback_ = sys.exc_info()
                     exstr = traceback.format_exception(type_, value_, traceback_)
@@ -108,28 +120,32 @@ def parse(shared_gps_data_queues_dict):
     raise Exception("invalid state")
 
 
-def parse_nmea(my_gps, str nmea):
+def parse_nmea_and_update_ble_chrc(my_gps, str nmea, update_ble_chrc=True):
     #print "parse_nmea:", nmea
     # parse it
-    for char in nmea:
-        my_gps.update(char)
+    for nmea_char in nmea:
+        my_gps.update(nmea_char)
 
-    ###### post parse hooks
-    # populate ble location and speed chrc
-    #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
-    chrc_bytes = gen_ble_location_and_speed_chrc_bytes(my_gps)
-    if chrc_bytes is not None:
-        hexstr = str(chrc_bytes).encode("hex")
-        #print "chrc_bytes valid: {}".format(hexstr)
-        if "GGA" in nmea:
-            ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
-            #print "mqtt pub ret:", ret
-    else:
-        print "chrc_bytes none:", chrc_bytes
-                    
-    # send to mqtt topic
+    if update_ble_chrc:
+        try:
+            ###### post parse hooks
+            # populate ble location and speed chrc
+            #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
+            chrc_bytes = gen_ble_location_and_speed_chrc_bytes(my_gps)
+            if chrc_bytes is not None:
+                hexstr = str(chrc_bytes).encode("hex")
+                #print "chrc_bytes valid: {}".format(hexstr)
+                if "GGA" in nmea:
+                    # publish to mqtt topic
+                    ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
+                    #print "mqtt pub ret:", ret
+            else:
+                print "chrc_bytes none:", chrc_bytes
+        except Exception:
+            type_, value_, traceback_ = sys.exc_info()
+            exstr = traceback.format_exception(type_, value_, traceback_)
+            print("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr)
 
-    
 
 def gen_ble_location_and_speed_chrc_bytes(my_gps):
 

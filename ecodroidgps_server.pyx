@@ -20,6 +20,7 @@ import fcntl, socket, struct
 import hashlib
 import ctypes
 import pandas as pd
+import ConfigParser
 
 import edg_utils
 import edg_gps_parser
@@ -28,8 +29,54 @@ import format_on_error_and_mount
 
 # make sure bluez-5.46 is in folder next to this folder
 LICENSE_PATH="/config/edg.lic"
-CONFIG_NO_BLE_MODE = "/config/no_ble"
+CONFIG_PATH="/config/config.ini"
+DEFAULT_CONFIG_PATH="/config/default_config.ini"
+LAST_USED_CONFIG_PATH="/config/last_used_config.ini"
+CONFIGS = {
+    "spp": 1,
+    "ble": 0,
+    "gpx": 0,
+    "nmea": 0,
+}
 
+
+def write_dict_to_ini(d, fpath):
+    try:
+        with open(fpath, "wb") as f:
+            config = ConfigParser.ConfigParser()
+            config.add_section('main')
+            for key in d:
+                config.set('main', key, d[key])
+            config.write(f)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print "WARNING: write ini {} exception {}".format(fpath, exstr)
+
+
+def load_ini_to_dict_keys(d, fpath):
+    try:        
+        config = ConfigParser.ConfigParser()
+        config.read(fpath)
+        for key in d:
+            d[key] = int(config.get('main', key))
+            print 'read key {} val {} type {}'.format(key, d[key], type(d[key]))
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print "WARNING: load ini {} exception {}".format(fpath, exstr)
+
+        
+def load_configs():
+    global CONFIGS
+    
+    # write default config
+    write_dict_to_ini(CONFIGS, DEFAULT_CONFIG_PATH)
+    if os.path.isfile(CONFIG_PATH):
+        load_ini_to_dict_keys(CONFIGS, CONFIG_PATH)
+    write_dict_to_ini(CONFIGS, LAST_USED_CONFIG_PATH)
+    print 'CONFIGS final:', CONFIGS
+    
 
 def get_bdaddr():
     pattern = None
@@ -168,6 +215,7 @@ def power_off_bt_dev(args):
 
 g_prev_edl_agent_proc = None
 def prepare_bt_device(args):
+    global CONFIGS
     global g_prev_edl_agent_proc
 
     ret = power_off_bt_dev(args)
@@ -252,10 +300,10 @@ def prepare_bt_device(args):
 
     cmd_list = [edl_agent_cmd]
 
-    if os.path.isfile(CONFIG_NO_BLE_MODE):
-        print 'CONFIG_NO_BLE_MODE flagged so not starting ble_lnp_cmd, flag path:', CONFIG_NO_BLE_MODE
+    if int(CONFIGS["ble"]) == 0:
+        print 'CONFIGS["ble"] is 0 so not starting ble_lnp_cmd'
     else:
-        print 'CONFIG_NO_BLE_MODE NOT flagged so starting ble_lnp_cmd normally, flag path:', CONFIG_NO_BLE_MODE
+        print 'CONFIGS["ble"] is not 0 so starting ble_lnp_cmd'
         cmd_list += [ble_lnp_cmd]
 
     p = multiprocessing.Process( target=keep_cmds_running, args=(cmd_list,) )
@@ -339,7 +387,7 @@ def stage0_check(mac_addr, bdaddr):
         return -3
 
     
-def register_bluez_dbus_profile(shared_gps_data_queues_dict):
+def register_bluez_dbus_spp_profile(shared_gps_data_queues_dict):
     
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     system_bus = dbus.SystemBus()
@@ -410,6 +458,8 @@ def main():
 
     print infostr
 
+    load_configs()
+
     args = parse_cmd_args()
 
     # clone/put bluez_compassion in folder next to this folder
@@ -459,19 +509,7 @@ def main():
 
     prepare_bt_device(args)
 
-    ### consumers
-    gobject_main_loop = register_bluez_dbus_profile(shared_gps_data_queues_dict)
-
-    gps_parser_proc = multiprocessing.Process(
-        target=edg_gps_parser.parse,
-        args=(shared_gps_data_queues_dict,)
-    )
-    
-    gps_parser_proc.start()
-
-    ###
-
-    ### producer
+    ### producer - read from gps device, write to it too if we got data from spp back from phone/device
     print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
     gps_reader_proc = multiprocessing.Process(
         target=edg_gps_reader.read_gps,
@@ -479,7 +517,27 @@ def main():
     )
     gps_reader_proc.start()
 
-    gobject_main_loop.run()
+
+    ### consumers
+
+    # gps parser - for ble and gpx/nmea logging
+    gps_parser_proc = multiprocessing.Process(
+        target=edg_gps_parser.parse,
+        args=(shared_gps_data_queues_dict,)
+    )
+    gps_parser_proc.start()
+
+    if int(CONFIGS["spp"]) == 1:
+        print 'CONFIGS["spp"] == 1 so starting bluetooth serial port profile reg and loop'
+        # bt spp profile
+        gobject_main_loop = register_bluez_dbus_spp_profile(shared_gps_data_queues_dict)
+        gobject_main_loop.run()
+    else:
+        print 'CONFIGS["spp"] == 0 so not starting bluetooth serial port profile reg and loop'
+        while True:
+            print 'main thread sleeping...'
+            time.sleep(60*60)
+            print 'main thread woke up...'
 
     print("ecodroidgps_server - terminating")
     exit(0)
