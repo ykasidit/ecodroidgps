@@ -1,0 +1,45 @@
+- hosts: pi
+  become: yes  
+  vars:
+  tasks:
+    
+  - name: create ftp user data
+    user:
+      name: data
+      home: /data
+      password: $6$YFFrWgjrgrtZu.V$ItKSZRFNn8ZsYlWfLsiJqgFsj0E8S4C.9RL/XEX9K5AP5oYNpZKdpoGuKsAZNCH.SejVTnb9Q91HbCfYT.lDf.
+      shell: /sbin/nologin
+
+  - name: create ftp user config
+    user:
+      name: config
+      home: /config
+      password: $6$NwLhbkG6OOsZ4Si$Brx0IwXFam8XU83Iq5ZPQWe3/ColcdtPwprheMyY8.hgXYf6xhnKUbkwnbbqTUo3MTr5ra2LocPODayArBxdB0
+      shell: /sbin/nologin
+
+  - name: Install vsftpd
+    apt: pkg=vsftpd state=present update_cache=false
+    
+  - name: copy vsftpd.userlist
+    copy:
+      src: vsftpd.userlist
+      dest: /etc/vsftpd.userlist
+      
+  - name: copy vsftpd.conf
+    copy:
+      src: vsftpd.conf
+      dest: /etc/vsftpd.conf
+    notify:
+      - restart vsftpd
+      
+  - name: ensure vsftpd running
+    service:
+      name: vsftpd
+      state: started
+      
+  handlers:
+  - name: restart vsftpd
+    service:
+      name: vsftpd
+      state: restarted
+      

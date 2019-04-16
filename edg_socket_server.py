@@ -85,9 +85,9 @@ def start(shared_gps_data_queues_dict, port=8000):
             print 'edg_socket_server try start...'
             global_gps_data_queues_dict = shared_gps_data_queues_dict
             
-            HOST, PORT = "localhost", SOCKET_SERVER_PORT
+
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind((HOST, PORT))
+            s.bind(('', SOCKET_SERVER_PORT))
             s.listen(2)
             print 'edg_socket_server started'
 

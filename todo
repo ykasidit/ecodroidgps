@@ -29,20 +29,33 @@ Aviailable kits
 ---
 
 - edg rpizerow:
-  - wifi can write to dev
-  - can write to dev
   - test u-center
-  
-  - update git repo
-  - re-test unittests
-  - test with u-center via bt serial windows
   - test rtk, ppp, ssr fix u-center
      - test f9 with ntrip rtk base bangkok
      - test f9 with igs base     
   - ask ssr in ardusimple forum
 
-  - re-enable overlay fs - test it
+  - /data gets formatted too easily - try dont unmount if already mounted, fsck force first
+  - manual install samba
+  - ftp
+  - samba, sees ip
+  * save img
+
+  
+
+---
+
+save img:
+  - re-enable overlay fs - reboot
+    - test spp from android
+    - socat - tcp:<ip>8888
+    - run overnight
+    - test again
+    - use in car
   - up image to google drive - anyone with the link - adeeb flash
+  
+---
+
   - license system logs req dev to csv, checks from google sheets
   - video compare s9 vs m8030 vs f9
 

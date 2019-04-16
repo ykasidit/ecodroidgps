@@ -6,15 +6,21 @@ import data_logger
 def test():
     my_gps = MicropyGPS()
 
-    fnprefix_invalid = data_logger.get_utc_datetime_objfor_my_gps(my_gps, ret_str=True)
-    print 'fnprefix_invalid:', fnprefix_invalid
+    caught_invalid = False
+    try:
+        fnprefix_invalid = data_logger.get_utc_datetime_objfor_my_gps(my_gps, ret_str=True)
+        print 'fnprefix_invalid:', fnprefix_invalid
+    except:
+        caught_invalid = True
+
+    assert caught_invalid
     
     nmeas = None
     with open("ex_nmea.txt", "r") as f:
         nmeas = f.read().replace("\r","").split("\n")
     
     for nmea in nmeas:
-        edg_gps_parser.parse_nmea(my_gps, nmea)
+        edg_gps_parser.parse_nmea_and_update_ble_chrc(my_gps, nmea)
 
     attrs = vars(my_gps)
     # now dump this in some way or another
