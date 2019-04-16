@@ -20,6 +20,7 @@ import fcntl, socket, struct
 import hashlib
 import ctypes
 import pandas as pd
+import edg_socket_server
 import ConfigParser
 
 import edg_utils
@@ -35,6 +36,7 @@ LAST_USED_CONFIG_PATH="/config/last_used_config.ini"
 CONFIGS = {
     "spp": 1,
     "ble": 0,
+    "tcp_server": 1,
     "gpx": 0,
     "nmea": 0,
 }
@@ -526,6 +528,16 @@ def main():
         args=(shared_gps_data_queues_dict,)
     )
     gps_parser_proc.start()
+
+    if int(CONFIGS["tcp_server"]) == 1:
+        print 'CONFIGS["tcp_server"] == 1 so starting edg_socker_server'
+        socket_server_proc = multiprocessing.Process(
+            target=edg_socket_server.start,
+            args=(shared_gps_data_queues_dict,)
+        )
+        socket_server_proc.start()
+    else:
+        print 'CONFIGS["tcp_server"] == 0 so not starting edg_socker_server'
 
     if int(CONFIGS["spp"]) == 1:
         print 'CONFIGS["spp"] == 1 so starting bluetooth serial port profile reg and loop'
