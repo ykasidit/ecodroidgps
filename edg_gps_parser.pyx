@@ -45,14 +45,7 @@ def parse(shared_gps_data_queues_dict):
     logger_state_dict['log_dir'] = "/data"
     logger_state_dict['last_flush_datetime'] = datetime.now()
 
-    zip_older_nmea_cmd = ''' cd /data && find . -maxdepth 1 -name "*_nmea.txt" -exec bash -c "echo 'zipping {}' && zip {}.zip {} && rm {}" \; '''
-    zip_older_gpx_cmd = ''' cd /data && find . -maxdepth 1 -name "*.gpx" -exec bash -c "echo 'zipping {}' && zip {}.zip {} && rm {}" \; '''
-
-    ret = os.system(zip_older_nmea_cmd)
-    print 'zip_older_nmea_cmd ret:', ret
-    
-    os.system(zip_older_gpx_cmd)
-    print 'zip_older_gpx_cmd ret:', ret
+    zip_older_logs()
 
     gpx = gpxpy.gpx.GPX()
     gpx.creator = "Data logged by EcoDroidGPS Bluetooth GPS/GNSS Receiver -- http://www.ClearEvo.com -- GPX engine by gpx.py -- https://github.com/tkrajina/gpxpy"
@@ -77,6 +70,7 @@ def parse(shared_gps_data_queues_dict):
     
     try:
         my_gps = None
+        led_on = False
         
         while True:
             nmea = queue.get()
@@ -89,6 +83,14 @@ def parse(shared_gps_data_queues_dict):
 
             # handle: TypeError: must be string or buffer, not int
             if isinstance(nmea, str):                
+
+                if "GGA" in nmea:
+                    os.system("timeout 1 echo 1 > /sys/class/leds/led0/brightness")
+                    led_on = True
+                else:
+                    if led_on:
+                        os.system("timeout 1 echo 0 > /sys/class/leds/led0/brightness")
+                        led_on = False                        
                 
                 try:
                     parse_nmea_and_update_ble_chrc(my_gps, nmea, update_ble_chrc=update_ble_chrc)
@@ -285,7 +287,17 @@ def gen_position_status_and_location(flag_bit_list, my_gps):
     return None
         
         
-    
+def zip_older_logs():
+
+    cmds = [
+        ''' timeout 30 cd /data && find . -maxdepth 1 -name "*_nmea.txt" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; ''',
+        ''' timeout 30 cd /data && find . -maxdepth 1 -name "*.gpx" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; '''
+    ]
+
+    for cmd in cmds:
+        ret = os.system(cmd)
+        print 'zip_older_logs() cmd {} ret: {}'.format(cmd, ret)
+
 
 
 

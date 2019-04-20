@@ -3,7 +3,7 @@ import ecodroidgps_server
 from dl_lic import dl_lic
 import platform
 
-RUN_CMD = "python format_on_error_and_mount.py --dev_to_dir_list /dev/disk/by-label/config:/config,/dev/disk/by-label/data:/data"
+RUN_CMD = "python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p3:/config,/dev/mmcblk0p4:/data"
 
 
 def test():
