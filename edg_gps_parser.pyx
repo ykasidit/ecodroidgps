@@ -289,15 +289,14 @@ def gen_position_status_and_location(flag_bit_list, my_gps):
         
 def zip_older_logs():
 
-    cmds = [
-        ''' timeout 30 cd /data && find . -maxdepth 1 -name "*_nmea.txt" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; ''',
-        ''' timeout 30 cd /data && find . -maxdepth 1 -name "*.gpx" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; '''
+    zip_match_filters = [
+        "*_nmea.txt",
+        "*.gpx"
     ]
 
-    for cmd in cmds:
+    for zip_match in zip_match_filters:
+        cmd = ''' cd /data && timeout 30 find . -maxdepth 1 -name "'''+zip_match+'''" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; '''
+        print "zip_older_logs cmd:", cmd
         ret = os.system(cmd)
-        print 'zip_older_logs() cmd {} ret: {}'.format(cmd, ret)
-
-
-
+        print 'zip_older_logs() ret:', ret
 

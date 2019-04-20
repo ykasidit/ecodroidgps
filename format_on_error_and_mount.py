@@ -85,12 +85,15 @@ def do(mlist):
                 backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")
-            return 0
+            
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))        
             print "WARNING: mount part: {} exception: {}".format(part, exstr)
-    return 2
+            return 2
+
+    
+    return 0
 
 
 if __name__ == "__main__":

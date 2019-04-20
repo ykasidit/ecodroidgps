@@ -43,12 +43,12 @@ def test():
         "dd if=/dev/urandom bs=1 count=10000 of=/config/c0",
 
         # test /data first so lic restore would work
-        "umount /data", # unmount before try corrupt device...
-        "dd if=/dev/zero bs=4096 count=1 of=/dev/disk/by-label/data",  # try corrupt device
+        "umount /data ; echo done", # unmount before try corrupt device - fine if unmount failed...
+        "dd if=/dev/zero bs=4096 count=1 of=/dev/mmcblk0p4",  # try corrupt data device
         RUN_CMD,
 
-        "umount /config",  # unmount before try corrupt device...        
-        "dd if=/dev/zero bs=4096 count=1 of=/dev/disk/by-label/config",  # try corrupt device
+        "umount /config ; echo done",  # unmount before try corrupt device...        
+        "dd if=/dev/zero bs=4096 count=1 of=/dev/mmcblk0p3",  # try corrupt config device
         RUN_CMD,
     ]
 
@@ -62,6 +62,9 @@ def test():
     print 'lic_still_exists after run test corrupt and restore partition:', lic_still_exists
 
     assert lic_orignally_exists == lic_still_exists
+
+    assert 0 == os.system("df -h | grep /data")
+    assert 0 == os.system("df -h | grep /config")
 
     
 if __name__ == "__main__":
