@@ -29,11 +29,7 @@ Aviailable kits
 ---
 
 - edg rpizerow:
-  - rebuild, pull git
-  - test all unittest esp data and zip
-  - /data see dmesg why not getting logged
-  - put zip, gpxpy in ansible
-  - test u-center
+  - test u-center rump rinex
   - test rtk, ppp, ssr fix u-center
      - test f9 with ntrip rtk base bangkok
      - test f9 with igs base     

@@ -13,7 +13,7 @@
       shell: /bin/bash
 
   - name: install required apt packages
-    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip
+    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin
 
   - name: install pip packages
     shell: pip install pyserial paho-mqtt pytest gpxpy
