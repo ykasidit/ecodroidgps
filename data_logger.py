@@ -88,7 +88,7 @@ def get_date_str_for_my_gps(logger_state_dict, my_gps):
 def get_utc_datetime_objfor_my_gps(logger_state_dict, my_gps, ret_str=False):
     this_datetime = None
     this_datetime =  logger_state_dict['last_rmc_datetime']
-    print 'this_datetime:', this_datetime
+    #print 'this_datetime:', this_datetime
     if this_datetime is None:
         raise Exception("no pynmea2 rmc time yet")
     if ret_str:
