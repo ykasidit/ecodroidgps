@@ -37,7 +37,7 @@ CONFIGS = {
     "spp": 1,
     "ble": 0,
     "tcp_server": 1,
-    "gpx": 0,
+    "gpx": 1,
     "nmea": 0,
 }
 

@@ -28,6 +28,15 @@ Aviailable kits
 
 ---
 
+* reduce cpu percent/heat in pi:
+  - use pynmea2
+    - not instantiating my_gps at all
+    - make sure works when datetime invalid (datetime 0 0 0) unittest
+    - edg_gps_parser test all again
+    
+  python test_data_logger_performance.py - optimize micropygps and other parts - edg_gps_parser, edg_gps_reader - current vs mqtt mode? or current vs algorithm change
+  ./start.sh reduce prints during operation to none - only flush etc
+
 - edg rpizerow:
   - test u-center rump rinex
   - test rtk, ppp, ssr fix u-center

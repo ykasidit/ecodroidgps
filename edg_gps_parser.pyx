@@ -10,11 +10,6 @@ import gpxpy
 import gpxpy.gpx
 import ecodroidgps_server
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, os.path.join(parentdir, "micropyGPS-python2"))
-from micropyGPS import MicropyGPS
-
 import bit_utils
 import ble_bit_offsets
 from libc.stdint cimport uint8_t, uint16_t, int32_t
@@ -40,29 +35,12 @@ def parse(shared_gps_data_queues_dict):
 
     q_list_index = bt_spp_funcs.get_q_list_avail_index(shared_gps_data_queues_dict)
 
-    logger_state_dict = {}
-    logger_state_dict['nmea_list'] = []
-    logger_state_dict['log_dir'] = "/data"
-    logger_state_dict['last_flush_datetime'] = datetime.now()
-
     zip_older_logs()
-
-    gpx = gpxpy.gpx.GPX()
-    gpx.creator = "Data logged by EcoDroidGPS Bluetooth GPS/GNSS Receiver -- http://www.ClearEvo.com -- GPX engine by gpx.py -- https://github.com/tkrajina/gpxpy"
-
-    # Create first track in our GPX:
-    gpx_track = gpxpy.gpx.GPXTrack()
-    gpx.tracks.append(gpx_track)
-    
-    # Create first segment in our GPX track:
-    gpx_segment = gpxpy.gpx.GPXTrackSegment()
-    gpx_track.segments.append(gpx_segment)
-
-    logger_state_dict['gpx'] = gpx
-    logger_state_dict['gpx_segment'] = gpx_segment    
 
     if q_list_index is None:
         raise Exception("ABORT: failed to get any unused queues in q_list")
+
+    logger_state_dict = data_logger.get_init_logger_state_dict()
 
     queue = q_list[q_list_index]
 
@@ -77,9 +55,6 @@ def parse(shared_gps_data_queues_dict):
             #print 'parser got nmea:', nmea
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")
-
-            if my_gps is None:
-                my_gps = MicropyGPS()
 
             # handle: TypeError: must be string or buffer, not int
             if isinstance(nmea, str):                
@@ -125,8 +100,9 @@ def parse(shared_gps_data_queues_dict):
 def parse_nmea_and_update_ble_chrc(my_gps, str nmea, update_ble_chrc=True):
     #print "parse_nmea:", nmea
     # parse it
-    for nmea_char in nmea:
-        my_gps.update(nmea_char)
+    if 'GGA' in nmea or 'RMC' in nmea:
+        for nmea_char in nmea:
+            my_gps.update(nmea_char)
 
     if update_ble_chrc:
         try:
@@ -159,7 +135,7 @@ def gen_ble_location_and_speed_chrc_bytes(my_gps):
     
     flag_bit_list = []
 
-    # see https://github.com/inmcm/micropyGPS for examples
+    # see https://github.com/Knio/pynmea2 for examples
     # see spec at https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.characteristic.location_and_speed.xml
 
     payload_buffer = None
