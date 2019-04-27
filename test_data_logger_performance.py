@@ -34,7 +34,7 @@ def test():
     logger_state_dict = data_logger.get_init_logger_state_dict()
     n_parsed_nmea_lines = 0
     nmeas = None
-    with open("ex_nmea.txt", "r") as f:
+    with open("ex_nmea.txt", "rb") as f:
         nmeas = f.readlines()
     EX_NMEA_LINES = 324
     assert len(nmeas) == EX_NMEA_LINES
