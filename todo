@@ -29,7 +29,10 @@ Aviailable kits
 ---
 
 * reduce cpu percent/heat in pi:
+  - test_date_logger_performance.py
+  - test_ble_chrc_parser_performance.py
   - use pynmea2
+  - all unittests pass
     - not instantiating my_gps at all
     - make sure works when datetime invalid (datetime 0 0 0) unittest
     - edg_gps_parser test all again

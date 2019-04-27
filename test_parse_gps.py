@@ -1,16 +1,20 @@
 import edg_gps_parser
-from micropyGPS import MicropyGPS
 import data_logger
+import pynmea2
+from datetime import datetime
 
 
 def test():
-    my_gps = MicropyGPS()
-
+    logger_state_dict = data_logger.get_init_logger_state_dict()    
+    logger_state_dict['rmc'] = pynmea2.RMC('GN', 'RMC', ())
+    logger_state_dict['last_rmc_datetime'] = datetime.utcfromtimestamp(0)
     caught_invalid = False
     try:
-        fnprefix_invalid = data_logger.get_utc_datetime_objfor_my_gps(my_gps, ret_str=True)
+        fnprefix_invalid = data_logger.get_utc_datetime_obj(logger_state_dict, ret_str=True)
         print 'fnprefix_invalid:', fnprefix_invalid
-    except:
+    except Exception as e:
+        print 'got exception:', e
+        assert "must be not be less than DEV_YEAR" in str(e)
         caught_invalid = True
 
     assert caught_invalid
@@ -20,16 +24,7 @@ def test():
         nmeas = f.read().replace("\r","").split("\n")
     
     for nmea in nmeas:
-        edg_gps_parser.parse_nmea_and_update_ble_chrc(my_gps, nmea)
-
-    attrs = vars(my_gps)
-    # now dump this in some way or another
-    print ', '.join("%s: %s" % item for item in attrs.items())
-    print "set {} lat: {} lon: {}".format(set, my_gps.latitude, my_gps.longitude)
-    dstr = data_logger.get_date_str_for_my_gps(my_gps)
-    print 'fn dstr:', dstr
-    dobj = data_logger.get_utc_datetime_objfor_my_gps(my_gps)
-    print 'fn dobj:', dobj ,'type:', type(dobj)
+        edg_gps_parser.on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=1)
 
 
 

@@ -1,6 +1,7 @@
 import gpxpy
 import gpxpy.gpx
 from datetime import datetime
+import time
 import platform
 import os
 import sys
@@ -60,8 +61,11 @@ def get_init_logger_state_dict():
     logger_state_dict = {}
     logger_state_dict['nmea_list'] = []
     logger_state_dict['log_dir'] = "/data"
-    logger_state_dict['last_flush_datetime'] = datetime.now()
+    logger_state_dict['last_flush_time'] = time.time()
     logger_state_dict['last_rmc_datetime'] = None
+    logger_state_dict['gga'] = None
+    logger_state_dict['rmc'] = None
+    logger_state_dict['gsa'] = None
 
     gpx = gpxpy.gpx.GPX()
     gpx.creator = "Data logged by EcoDroidGPS Bluetooth GPS/GNSS Receiver -- http://www.ClearEvo.com -- GPX engine by gpx.py -- https://github.com/tkrajina/gpxpy"
@@ -78,41 +82,52 @@ def get_init_logger_state_dict():
 
 
 
-def get_date_str_for_my_gps(logger_state_dict, my_gps):
+def get_last_date_str(logger_state_dict):
     this_datetime =  logger_state_dict['last_rmc_datetime']
     if this_datetime is None:
         raise Exception("invalid date")
     return this_datetime.strftime("%Y-%m-%d")
 
 
-def get_utc_datetime_objfor_my_gps(logger_state_dict, my_gps, ret_str=False):
+DEV_YEAR = 2019
+
+
+def get_utc_datetime_obj(logger_state_dict, ret_str=False):
     this_datetime = None
     this_datetime =  logger_state_dict['last_rmc_datetime']
     #print 'this_datetime:', this_datetime
     if this_datetime is None:
         raise Exception("no pynmea2 rmc time yet")
+    #print 'this_datetime.year', this_datetime.year
+    if this_datetime.year < DEV_YEAR:
+        raise Exception("invalid rmc date: {} - must be not be less than DEV_YEAR of {}".format(this_datetime.year, DEV_YEAR))
     if ret_str:
         return this_datetime.strftime("%Y-%m-%d_%H-%M-%S")
     return this_datetime
     
 
-
-def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=True):
-    
-    my_gps = logger_state_dict['my_gps']
+def on_nmea(dict logger_state_dict, str nmea, int static_gpx_formatstr_no_gpxpy=1, force_flush=False):
+    #print 'date_logger.on_nmea() start'
     nmea_list = logger_state_dict['nmea_list']
 
     if 'log_name_prefix' not in logger_state_dict:
-        logger_state_dict['log_name_prefix'] = get_utc_datetime_objfor_my_gps(logger_state_dict, my_gps, ret_str=True)
+        logger_state_dict['log_name_prefix'] = get_utc_datetime_obj(logger_state_dict, ret_str=True)
         #print "set logger_state_dict['log_name_prefix']:", logger_state_dict['log_name_prefix']
 
     flush_now = False
-    now = datetime.now()
-    seconds_since_last_flush = (now - logger_state_dict['last_flush_datetime']).total_seconds()
+    now = time.time()
+    #print "now {} logger_state_dict['last_flush_time'] {}".format(now, logger_state_dict['last_flush_time'])
+    seconds_since_last_flush = (now - logger_state_dict['last_flush_time'])
     if seconds_since_last_flush > LOG_FLUSH_EVERY_N_SECONDS:
         print 'data_logger flush now:', now, 'seconds_since_last_flush:', seconds_since_last_flush
-        logger_state_dict['last_flush_datetime'] = datetime.now()
+        logger_state_dict['last_flush_time'] = time.time()
         flush_now = True
+    else:
+        pass
+        #print 'seconds_since_last_flush: {}', seconds_since_last_flush
+
+    if force_flush:
+        flush_now=True
 
     #### NMEA    
     if ecodroidgps_server.CONFIGS["nmea"] == 1:
@@ -124,6 +139,8 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=True):
                 append_list_content_to_file(logger_state_dict['log_dir'], fn, nmea_list)
                 # clear nmea_list
                 del nmea_list[:]
+                if force_flush:
+                    print 'WARNING: force flush now - nmea_list len after flush:', len(nmea_list)
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -131,33 +148,24 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=True):
             del nmea_list[:]  # it might raise during flush so list might eat ram more and more
     
     #### GPX
-    if ecodroidgps_server.CONFIGS["gpx"] == 1:
+    if ecodroidgps_server.CONFIGS["gpx"] == 1:        
         try:
             # if is gga then append gpx track point list
-            if "GGA" in nmea:
-                lat = None
-                lon = None
-                altitude_m = None
-                time_obj = None
-                if isinstance(my_gps, pynmea2.types.talker.TalkerSentence):
-                    lat = my_gps.latitude
-                    lon = my_gps.longitude
-                    altitude_m = my_gps.altitude
-                    time_obj = get_utc_datetime_objfor_my_gps(logger_state_dict, my_gps)
-                else:
-                    lat = (my_gps.latitude[0] + (my_gps.latitude[1]/60.0)) * (1.0 if my_gps.latitude[2] == 'N' else -1.0)
-                    lon = (my_gps.longitude[0] + (my_gps.longitude[1]/60.0)) * (1.0 if my_gps.longitude[2] == 'E' else -1.0)
-                    altitude_m = my_gps.altitude
-                    time_obj = get_utc_datetime_objfor_my_gps(logger_state_dict, my_gps)
-
-                logger_state_dict['gpx_segment'].points.append(
-                    gpxpy.gpx.GPXTrackPoint(
-                        latitude=lat,
-                        longitude=lon,
-                        elevation=altitude_m,
-                        time=time_obj
+            if "GGA" in nmea: #isinstance(my_gps, pynmea2.types.talker.GGA):
+                gga = logger_state_dict['gga']
+                if gga is not None:                    
+                    lat = gga.latitude
+                    lon = gga.longitude
+                    altitude_m = gga.altitude
+                    time_obj = get_utc_datetime_obj(logger_state_dict)
+                    logger_state_dict['gpx_segment'].points.append(
+                        gpxpy.gpx.GPXTrackPoint(
+                            latitude=lat,
+                            longitude=lon,
+                            elevation=altitude_m,
+                            time=time_obj
+                        )
                     )
-                )
                 
             if flush_now:
                 fn = "{}.gpx".format(logger_state_dict['log_name_prefix'])
@@ -166,7 +174,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=True):
                 header = None
                 body = None
                 footer = None
-                if static_gpx_formatstr_no_gpxpy == False:
+                if not static_gpx_formatstr_no_gpxpy:
                     gpx_buf = logger_state_dict['gpx'].to_xml()
 
                     search_str = "<trkseg>"

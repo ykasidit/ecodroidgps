@@ -37,7 +37,7 @@ CONFIGS = {
     "spp": 1,
     "ble": 0,
     "tcp_server": 1,
-    "gpx": 1,
+    "gpx": 0,
     "nmea": 0,
 }
 
@@ -50,6 +50,8 @@ def write_dict_to_ini(d, fpath):
             for key in d:
                 config.set('main', key, d[key])
             config.write(f)
+        ret = os.system('unix2dos {}'.format(fpath))
+        print 'unix2dos on written ini ret:', ret
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -59,6 +61,9 @@ def write_dict_to_ini(d, fpath):
 def load_ini_to_dict_keys(d, fpath):
     try:        
         config = ConfigParser.ConfigParser()
+        ret = os.system('dos2unix {}'.format(fpath))
+        print 'dos2unix on ini pre-read ret:', ret
+
         config.read(fpath)
         for key in d:
             d[key] = int(config.get('main', key))
@@ -69,13 +74,15 @@ def load_ini_to_dict_keys(d, fpath):
         print "WARNING: load ini {} exception {}".format(fpath, exstr)
 
         
-def load_configs():
+def load_configs(config_path=CONFIG_PATH):
     global CONFIGS
     
     # write default config
     write_dict_to_ini(CONFIGS, DEFAULT_CONFIG_PATH)
-    if os.path.isfile(CONFIG_PATH):
-        load_ini_to_dict_keys(CONFIGS, CONFIG_PATH)
+    if os.path.isfile(config_path):
+        load_ini_to_dict_keys(CONFIGS, config_path)
+    else:
+        print 'WARNING: not os.path.isfile(config_path): {}'.format(config_path)
     write_dict_to_ini(CONFIGS, LAST_USED_CONFIG_PATH)
     print 'CONFIGS final:', CONFIGS
     

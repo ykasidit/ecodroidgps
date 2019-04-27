@@ -16,6 +16,7 @@ from libc.stdint cimport uint8_t, uint16_t, int32_t
 import numpy as np
 import math
 import os
+import pynmea2
 
 
 ############## micropyGPS/nmea consts
@@ -44,45 +45,15 @@ def parse(shared_gps_data_queues_dict):
 
     queue = q_list[q_list_index]
 
-    update_ble_chrc = ecodroidgps_server.CONFIGS['ble'] == 1
+    update_ble_chrc_enabled = ecodroidgps_server.CONFIGS['ble']
     
     try:
-        my_gps = None
-        led_on = False
-        
         while True:
             nmea = queue.get()
             #print 'parser got nmea:', nmea
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")
-
-            # handle: TypeError: must be string or buffer, not int
-            if isinstance(nmea, str):                
-
-                if "GGA" in nmea:
-                    os.system("timeout 1 echo 1 > /sys/class/leds/led0/brightness")
-                    led_on = True
-                else:
-                    if led_on:
-                        os.system("timeout 1 echo 0 > /sys/class/leds/led0/brightness")
-                        led_on = False                        
-                
-                try:
-                    parse_nmea_and_update_ble_chrc(my_gps, nmea, update_ble_chrc=update_ble_chrc)
-                except:
-                    type_, value_, traceback_ = sys.exc_info()
-                    exstr = traceback.format_exception(type_, value_, traceback_)
-                    print("WARNING: gps parse exception:", exstr)
-                    my_gps = None  # so it will make new obj in next loop
-
-                logger_state_dict['my_gps'] = my_gps  # so logger_state_dict can get parsed values                    
-                try:
-                    data_logger.on_nmea(logger_state_dict, nmea)
-                except:
-                    type_, value_, traceback_ = sys.exc_info()
-                    exstr = traceback.format_exception(type_, value_, traceback_)
-                    print("WARNING: log nmea exception:", exstr)
-                    
+            on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=update_ble_chrc_enabled)
                 
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
@@ -97,26 +68,62 @@ def parse(shared_gps_data_queues_dict):
     raise Exception("invalid state")
 
 
-def parse_nmea_and_update_ble_chrc(my_gps, str nmea, update_ble_chrc=True):
-    #print "parse_nmea:", nmea
-    # parse it
-    if 'GGA' in nmea or 'RMC' in nmea:
-        for nmea_char in nmea:
-            my_gps.update(nmea_char)
+MIN_NMEA_LEN = 5
+
+
+def on_nmea(str nmea, dict logger_state_dict,int update_ble_chrc_enabled=0):
+    # handle: TypeError: must be string or buffer, not int
+    gga = None
+    if isinstance(nmea, str):
+        if len(nmea) > MIN_NMEA_LEN:
+            nmea_type = nmea[3:6]
+            if "GGA" == nmea_type:
+                gga = pynmea2.parse(nmea)
+                logger_state_dict['gga'] = gga
+                try:
+                    if update_ble_chrc_enabled:
+                        # update once per GGA
+                        update_ble_chrc(logger_state_dict)
+                except:
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = traceback.format_exception(type_, value_, traceback_)
+                    print("WARNING: gps parse exception:", exstr)
+            elif "RMC" == nmea_type:
+                rmc = pynmea2.parse(nmea)
+                logger_state_dict['rmc'] = rmc
+                logger_state_dict['last_rmc_datetime'] = rmc.datetime
+            elif "GSA" == nmea_type:
+                gsa = pynmea2.parse(nmea)
+                logger_state_dict['gsa'] = gsa
+        else:
+            print("WARNING: edg_gps_parser.on_nmea() - supplied nmea str len is too short - ignoring: {}".format(len(nmea)))
+
+        # always log nmea even if too short
+        try:
+            data_logger.on_nmea(logger_state_dict, nmea)
+            pass
+        except:
+            type_, value_, traceback_ = sys.exc_info()
+            exstr = traceback.format_exception(type_, value_, traceback_)
+            print("WARNING: log nmea exception:", exstr)
+    else:
+        print("WARNING: edg_gps_parser.on_nmea() - supplied nmea is not str! ignoring type: {}".format(type(nmea)))
+
+
+def update_ble_chrc(logger_state_dict):
 
     if update_ble_chrc:
         try:
             ###### post parse hooks
             # populate ble location and speed chrc
             #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
-            chrc_bytes = gen_ble_location_and_speed_chrc_bytes(my_gps)
+            chrc_bytes = gen_ble_location_and_speed_chrc_bytes(logger_state_dict)
             if chrc_bytes is not None:
                 hexstr = str(chrc_bytes).encode("hex")
-                #print "chrc_bytes valid: {}".format(hexstr)
-                if "GGA" in nmea:
-                    # publish to mqtt topic
-                    ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
-                    #print "mqtt pub ret:", ret
+                #print "chrc_bytes valid: {}".format(hexstr)                
+                # publish to mqtt topic
+                ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
+                #print "mqtt pub ret:", ret
             else:
                 print "chrc_bytes none:", chrc_bytes
         except Exception:
@@ -125,7 +132,7 @@ def parse_nmea_and_update_ble_chrc(my_gps, str nmea, update_ble_chrc=True):
             print("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr)
 
 
-def gen_ble_location_and_speed_chrc_bytes(my_gps):
+def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):
 
     las_gen_funcs = [
         gen_inst_speed,
@@ -147,7 +154,7 @@ def gen_ble_location_and_speed_chrc_bytes(my_gps):
     for func in las_gen_funcs:
         #print "call func:", func
         try:
-            ret = func(flag_bit_list, my_gps)
+            ret = func(flag_bit_list, logger_state_dict)
             if ret is not None:
                 payload_list.append(ret)
         except:
@@ -183,8 +190,12 @@ def gen_ble_location_and_speed_chrc_bytes(my_gps):
     return None
 
 
-def gen_elevation(flag_bit_list, my_gps):
-    altitude_m = my_gps.altitude
+def gen_elevation(flag_bit_list, logger_state_dict):
+    gga = logger_state_dict['gga']
+    if gga is None:
+        raise Exception('gga is still None')
+
+    altitude_m = gga.altitude
 
     # elevation 1/100 resolution
     altitude_m *= 100.0
@@ -201,11 +212,16 @@ def gen_elevation(flag_bit_list, my_gps):
     return ret
 
 
-def gen_inst_speed(flag_bit_list, my_gps):
+def gen_inst_speed(flag_bit_list, logger_state_dict):
+    rmc = logger_state_dict['rmc']
+    if rmc is None:
+        raise Exception('rmc is still None')
+
     ### instantaneous_speed
     # Current speed is stored in a tuple of values representing knots, miles per hours and kilometers per hour
-    #print "my_gps.speed len:", len(my_gps.speed)
-    kph = my_gps.speed[2]
+    spd_over_grnd = rmc.spd_over_grnd
+    # google calculator 1 knots = 1.85200 kilometers per hour (search google: knots to kph)
+    kph = 1.85200 * spd_over_grnd
 
     #print "km/h:", kph
     
@@ -223,9 +239,16 @@ def gen_inst_speed(flag_bit_list, my_gps):
 LAT_LON_RESOLUTION_MULTIPLIER = math.pow(10.0, 7)
 
 
-def gen_position_status_and_location(flag_bit_list, my_gps):
+def gen_position_status_and_location(flag_bit_list, logger_state_dict):
+    gga = logger_state_dict['gga']
+    gsa = logger_state_dict['gsa']
+    if gga is None:
+        raise Exception('gga is still None')
+    if gsa is None:
+        raise Exception('gsa is still None')
+    
     # Fix types can be: 1 = no fix, 2 = 2D fix, 3 = 3D fix
-    fix_type = my_gps.fix_type
+    fix_type = gsa.mode_fix_type
 
     # spec says position_status is a two bit len field in flag so no payload: 0 = no position, 1 = position ok
     if fix_type >= 2:
@@ -233,11 +256,9 @@ def gen_position_status_and_location(flag_bit_list, my_gps):
         # set value of position_status bit to 1
         flag_bit_list.append(ble_bit_offsets.location_and_speed.Position_Status)
 
-        # TODO: prepare location buffer
-        lat = (my_gps.latitude[0] + (my_gps.latitude[1]/60.0)) * (1.0 if my_gps.latitude[2] == 'N' else -1.0)
-        lon = (my_gps.longitude[0] + (my_gps.longitude[1]/60.0)) * (1.0 if my_gps.longitude[2] == 'E' else -1.0)
-        #print "deg lat:", lat
-        #print "deg lon:", lon
+        
+        lat = gga.latitude
+        lon = gga.longitude
 
         lat *= LAT_LON_RESOLUTION_MULTIPLIER
         lon *= LAT_LON_RESOLUTION_MULTIPLIER
