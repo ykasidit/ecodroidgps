@@ -13,10 +13,10 @@
       shell: /bin/bash
 
   - name: install required apt packages
-    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin
+    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin dos2unix
 
   - name: install pip packages
-    shell: pip install pyserial paho-mqtt pytest gpxpy
+    shell: pip install pyserial paho-mqtt pytest gpxpy pynmea
 
   - name: prepare musl for ldd of edg cython so compiled from armhf/arm32v6 alpine to load correctly
     shell: cd /lib && ln -sf ld-musl-armhf.so.1 libc.musl-armhf.so.1
