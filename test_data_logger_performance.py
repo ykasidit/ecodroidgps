@@ -29,7 +29,7 @@ def test():
     os.system("rm -rf /data/2019-04-15_02-19-52.gpx")    
     os.system('rm -rf /data/2019-04-15_02-19-52_nmea.txt')
 
-    n_test_rounds = 500
+    n_test_rounds = 100
     start = time.time()
     logger_state_dict = data_logger.get_init_logger_state_dict()
     n_parsed_nmea_lines = 0
@@ -46,9 +46,6 @@ def test():
 
     print 'total_duration for {} rounds of parse and log of "ex_nmea.txt": {} seconds (n_parsed_nmea_lines: {})'.format(n_test_rounds, now - start, n_parsed_nmea_lines)
 
-    if now - start > 2.0:
-        assert os.path.isfile('/data/2019-04-15_02-19-52_nmea.txt')
-        assert os.path.isfile('/data/2019-04-15_02-19-52.gpx')
 
 
 if __name__ == "__main__":

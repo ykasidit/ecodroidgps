@@ -96,7 +96,8 @@ def on_nmea(str nmea, dict logger_state_dict,int update_ble_chrc_enabled=0):
                 gsa = pynmea2.parse(nmea)
                 logger_state_dict['gsa'] = gsa
         else:
-            print("WARNING: edg_gps_parser.on_nmea() - supplied nmea str len is too short - ignoring: len: {} nmea: {}".format(len(nmea), nmea))
+            pass
+            #print("WARNING: edg_gps_parser.on_nmea() - supplied nmea str len is too short - ignoring: len: {} nmea: {}".format(len(nmea), nmea))
 
         # always log nmea even if too short
         try:

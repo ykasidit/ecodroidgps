@@ -15,7 +15,7 @@ SOCKET_SERVER_PORT = 8888
 global_gps_data_queues_dict = None
 
 
-def socket_tx(queue, request):
+def socket_tx(queue, request, global_gps_data_queues_dict, q_list_index):
     print 'socket_tx start for request:', request
     try:
         while True:
@@ -26,10 +26,20 @@ def socket_tx(queue, request):
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print "WARNING: socket_tx exception {}".format(exstr)
+    try:
+        print "release_q_list_index {} start".format(q_list_index)
+        bt_spp_funcs.release_q_list_index(global_gps_data_queues_dict, q_list_index)
+        print "release_q_list_index {} done".format(q_list_index)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print "WARNING: release_q_list_index exception {}".format(exstr)
+
+        
     print 'socket_tx end for request:', request
 
     
-RX_BUF_MAX_SIZE = 256
+RX_BUF_MAX_SIZE = 2048
 def socket_rx(request, global_write_queue):
     print 'socket_rx start for request:', request
     try:
@@ -58,7 +68,7 @@ def handle(request):
 
         queue = q_list[q_list_index]
 
-        stx_thread = threading.Thread(target=socket_tx, args=(queue, request,))
+        stx_thread = threading.Thread(target=socket_tx, args=(queue, request, global_gps_data_queues_dict, q_list_index))
         stx_thread.daemon = True
         stx_thread.start()
 
@@ -69,8 +79,7 @@ def handle(request):
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print "WARNING: tcp hadle exception {}".format(exstr)
-
-    time.sleep(10)
+        
     print 'edg_socket_server end accept request:', request
 
 
@@ -94,9 +103,7 @@ def start(shared_gps_data_queues_dict, port=8000):
             while True:
                 conn, addr = s.accept()
                 print 'edg_socket_server new connection accepted... conn:', conn
-
                 handle(conn)
-
                 print 'edg_socket_server new connection handle done... conn:', conn
 
         except (KeyboardInterrupt, SystemExit):

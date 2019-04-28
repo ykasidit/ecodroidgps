@@ -29,19 +29,18 @@ Aviailable kits
 ---
 
 * reduce cpu percent/heat in pi:
-  - test_date_logger_performance.py
-  - test_ble_chrc_parser_performance.py
-  - use pynmea2
   - all unittests pass
-    - not instantiating my_gps at all
-    - make sure works when datetime invalid (datetime 0 0 0) unittest
     - edg_gps_parser test all again
-    
-  python test_data_logger_performance.py - optimize micropygps and other parts - edg_gps_parser, edg_gps_reader - current vs mqtt mode? or current vs algorithm change
   ./start.sh reduce prints during operation to none - only flush etc
 
+  - test ble chrc romain quidlet parser then make unittest assert binaries from mqtt_sub of current test_parse_gps.py
+  - test_ble_chrc_parser_performance.py
+    
+
 - edg rpizerow:
-  - test u-center rump rinex
+  - test rtk
+  - ardusimple box case
+  - test u-center dump rinex
   - test rtk, ppp, ssr fix u-center
      - test f9 with ntrip rtk base bangkok
      - test f9 with igs base     

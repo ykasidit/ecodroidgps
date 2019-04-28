@@ -19,13 +19,6 @@
       clone: yes
       update: yes
 
-  - name: install micropygps
-    git:
-      repo: https://github.com/ykasidit/micropyGPS-python2.git
-      dest: "{{ home }}/micropyGPS-python2"
-      clone: yes
-      update: yes
-
   - name: install ecodroidgps
     git:
       repo: https://gitlab.com/ykasidit/ecodroidgps_bin.git

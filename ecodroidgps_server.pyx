@@ -42,6 +42,17 @@ CONFIGS = {
 }
 
 
+def config_needs_edg_gps_parser_proc():
+    global CONFIGS
+    if int(CONFIGS["gpx"]):
+        return True
+    if int(CONFIGS["nmea"]):
+        return True
+    if int(CONFIGS["ble"]):
+        return True
+    return False    
+
+
 def write_dict_to_ini(d, fpath):
     try:
         with open(fpath, "wb") as f:
@@ -530,11 +541,15 @@ def main():
     ### consumers
 
     # gps parser - for ble and gpx/nmea logging
-    gps_parser_proc = multiprocessing.Process(
-        target=edg_gps_parser.parse,
-        args=(shared_gps_data_queues_dict,)
-    )
-    gps_parser_proc.start()
+    if config_needs_edg_gps_parser_proc():
+        print "config_needs_edg_gps_parser_proc() so start it"
+        gps_parser_proc = multiprocessing.Process(
+            target=edg_gps_parser.parse,
+            args=(shared_gps_data_queues_dict,)
+        )
+        gps_parser_proc.start()
+    else:
+        print "not config_needs_edg_gps_parser_proc() so not starting it"
 
     if int(CONFIGS["tcp_server"]) == 1:
         print 'CONFIGS["tcp_server"] == 1 so starting edg_socker_server'

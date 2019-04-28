@@ -28,6 +28,8 @@ cp *.so ../ecodroidgps_bin
 exit_if_failed
 rm ../ecodroidgps_bin/*.py
 cp *.py ../ecodroidgps_bin
+rm ../ecodroidgps_bin/*.ini
+cp *.ini ../ecodroidgps_bin
 exit_if_failed
 rm ../ecodroidgps_bin/gen_edg_lic.py
 exit_if_failed

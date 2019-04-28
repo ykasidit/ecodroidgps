@@ -13,7 +13,7 @@
       shell: /bin/bash
 
   - name: install required apt packages
-    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin dos2unix
+    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin dos2unix libxml2-utils
 
   - name: copy smb.conf
     copy:
