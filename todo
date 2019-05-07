@@ -29,6 +29,12 @@ Aviailable kits
 ---
 
 * reduce cpu percent/heat in pi:
+  - bt not pair, not work
+  - see /data/j - why gpx not logging
+  - try disconnect usb and reconnect - bt/wifi data must still flow, gpx must still grow
+  - whole system slow during ssh after gpx 1 night
+  
+  - txbuf alloc prevent - see vs f9
   - all unittests pass
     - edg_gps_parser test all again
   ./start.sh reduce prints during operation to none - only flush etc

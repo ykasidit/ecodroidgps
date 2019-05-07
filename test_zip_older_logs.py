@@ -1,5 +1,5 @@
 import os
-import edg_gps_parser
+import data_logger
 
 
 def test():
@@ -10,7 +10,10 @@ def test():
 
     assert os.system(cmd) == 0
     
-    edg_gps_parser.zip_older_logs()
+    plist = data_logger.zip_older_logs_get_popen_list()
+    assert plist is not None
+    for p in plist:
+        assert 0 == p.wait()
 
     assert os.path.isfile(target_nmea_zip)
     assert os.path.isfile(target_gpx_zip)

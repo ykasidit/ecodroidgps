@@ -8,6 +8,7 @@ import sys
 import traceback
 import ecodroidgps_server
 import pynmea2
+import subprocess
 
 LOG_FLUSH_EVERY_N_SECONDS = 1 if 'x86' in platform.processor() else 60
 GPX_HEADER = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -104,9 +105,37 @@ def get_utc_datetime_obj(logger_state_dict, ret_str=False):
     if ret_str:
         return this_datetime.strftime("%Y-%m-%d_%H-%M-%S")
     return this_datetime
-    
 
+
+def zip_older_logs_get_popen_list():
+    zip_match_filters = [
+        "*_nmea.txt",
+        "*.gpx",
+    ]
+
+    ret_list = []
+    for zip_match in zip_match_filters:
+        # dont add a timeout as we want all to complete and get removed at end
+        cmd = ''' cd /data && find . -maxdepth 1 -name "'''+zip_match+'''" -exec bash -c "echo 'zipping {}' && nice -n15 zip -r -1 - {} > {}.zip && rm -rf {}" \; '''
+        print "zip_older_logs cmd:", cmd
+        ret = subprocess.Popen(cmd, shell=True)
+        print 'zip_older_logs() popen ret:', ret
+        ret_list.append(ret)
+
+    return ret_list
+
+
+g_zip_older_logs_ret_list = None  # run once
+
+
+        
 def on_nmea(dict logger_state_dict, str nmea, int static_gpx_formatstr_no_gpxpy=1, force_flush=False):
+    global g_zip_older_logs_ret_list
+
+    if g_zip_older_logs_ret_list is None:
+        print 'g_zip_older_logs_get_popen_list is None so run zip_older_logs_get_popen_list()'
+        g_zip_older_logs_ret_list = zip_older_logs_get_popen_list()
+    
     #print 'date_logger.on_nmea() start'
     nmea_list = logger_state_dict['nmea_list']
 

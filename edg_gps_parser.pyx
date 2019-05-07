@@ -36,7 +36,7 @@ def parse(shared_gps_data_queues_dict):
 
     q_list_index = bt_spp_funcs.get_q_list_avail_index(shared_gps_data_queues_dict)
 
-    zip_older_logs()
+    # zip_older_logs() - this timeouts then big nmea files are found, try move it else where
 
     if q_list_index is None:
         raise Exception("ABORT: failed to get any unused queues in q_list")
@@ -283,18 +283,5 @@ def gen_position_status_and_location(flag_bit_list, logger_state_dict):
         pass
     
     return None
-        
-        
-def zip_older_logs():
 
-    zip_match_filters = [
-        "*_nmea.txt",
-        "*.gpx"
-    ]
-
-    for zip_match in zip_match_filters:
-        cmd = ''' cd /data && timeout 30 find . -maxdepth 1 -name "'''+zip_match+'''" -exec bash -c "echo 'zipping {}' && zip -r - {} > {}.zip && rm {}" \; '''
-        print "zip_older_logs cmd:", cmd
-        ret = os.system(cmd)
-        print 'zip_older_logs() ret:', ret
 

@@ -39,6 +39,10 @@ CONFIGS = {
     "tcp_server": 1,
     "gpx": 0,
     "nmea": 0,
+    "BAUD_RATE": 230400,
+    "PYSERIAL_READ_TIMEOUT": 1.0,
+    "MAX_READLINE_SIZE": 1024,
+    "MAX_READ_BUFF_SIZE": 4096,
 }
 
 
@@ -77,8 +81,12 @@ def load_ini_to_dict_keys(d, fpath):
 
         config.read(fpath)
         for key in d:
-            d[key] = int(config.get('main', key))
-            print 'read key {} val {} type {}'.format(key, d[key], type(d[key]))
+            try:
+                d[key] = config.get('main', key)
+                d[key] = eval(d[key])
+            except Exception as pe:
+                print "WARNING: load config for key: {} failed with exception: {}".format(key, pe)
+            print 'load key {} final val {} type {}'.format(key, d[key], type(d[key]))
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -267,99 +275,65 @@ def prepare_bt_device(args):
     ret = call_bash_cmd(os.path.join(edg_utils.get_module_path(), "set_class.sh"))
     print "set_class ret:", ret
 
-    ############# start subprocess commands
-    
-    # start the auto-pair agent    
-    edl_agent_cmd = os.path.join(
-        args["bluez_compassion_path"]
-        ,"edl_agent"
-    )
-
-    bluez_gatt_server_py_path = os.path.abspath(
-        os.path.join(
-            edg_utils.get_module_path(),
-            os.pardir,
-            "bluez-gatt-server",
-            "bluez-gatt-server.py"
-        )
-    )
-
-    
-    ln_feature_mask_dump_str = edg_utils.gen_edg_ln_feature_bitmask_hex_dump_str()
-    print "bitmask_str:", ln_feature_mask_dump_str
-
-    chrc_df = pd.DataFrame(
-        {
-            "assigned_number": [
-                "0x2A6A",
-                "0x2A67"
-            ],
-            "mqtt_url": [
-                "mqtt://localhost:1883/lnf",
-                "mqtt://localhost:1883/las",                
-            ],
-            "default_val_hexdump": [
-                ln_feature_mask_dump_str,
-                "0000"
-            ]
-        }
-    )
-
-    chrc_csv_path = os.path.join(
-        "/tmp",
-        "ln_chrc.csv"
-    )
-
-    chrc_df.to_csv(chrc_csv_path, index=False)
-    chmodret = os.system("chmod 644 {}".format(chrc_csv_path))
-    
-    ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
-        bluez_gatt_server_py_path,
-        chrc_csv_path
-    )
-
-    cmd_list = [edl_agent_cmd]
-
-    if int(CONFIGS["ble"]) == 0:
-        print 'CONFIGS["ble"] is 0 so not starting ble_lnp_cmd'
-    else:
-        print 'CONFIGS["ble"] is not 0 so starting ble_lnp_cmd'
-        cmd_list += [ble_lnp_cmd]
-
-    p = multiprocessing.Process( target=keep_cmds_running, args=(cmd_list,) )
-    p.start()
-
-    # TODO start the ble service
-
     ############ done started subprocesses
-
     
     printlog("prepare_bt_device done...")
     return
 
 
-def keep_cmds_running(cmds):
+def keep_cmds_running(cmds, shared_gps_data_queues_dict):
     running_cmd_to_proc_dict = {}
+
+    gps_parser_proc = None
+    socket_server_proc = None
+
     while True:
         printlog("keep_cmds_running: checking cmds...")
         try:
             for cmd in cmds:
-                old_proc = None
-                old_proc_ret = None
-                if cmd in running_cmd_to_proc_dict:
-                    old_proc = running_cmd_to_proc_dict[cmd]
-                    if old_proc is not None:
-                        old_proc_ret = old_proc.poll()
-                if old_proc is None or old_proc_ret is not None:
-                    kill_popen_proc(old_proc)
-                    if old_proc is not None:
-                        printlog("WARNING: keep_cmds_running: old_proc for cmd {} died with ret code {} - restarting it...".format(cmd, old_proc_ret))
-                    printlog("keep_cmds_running: starting new_proc for cmd {}".format(cmd))
-                    new_proc = popen_bash_cmd(cmd)
-                    running_cmd_to_proc_dict[cmd] = new_proc
-                else:
-                    printlog("keep_cmds_running: ok cmd still running: {}".format(cmd))
-                        
+                try:
+                    old_proc = None
+                    old_proc_ret = None
+                    if cmd in running_cmd_to_proc_dict:
+                        old_proc = running_cmd_to_proc_dict[cmd]
+                        if old_proc is not None:
+                            old_proc_ret = old_proc.poll()
+                    if old_proc is None or old_proc_ret is not None:
+                        kill_popen_proc(old_proc)
+                        if old_proc is not None:
+                            printlog("WARNING: keep_cmds_running: old_proc for cmd {} died with ret code {} - restarting it...".format(cmd, old_proc_ret))
+                        printlog("keep_cmds_running: starting new_proc for cmd {}".format(cmd))
+                        new_proc = popen_bash_cmd(cmd)
+                        running_cmd_to_proc_dict[cmd] = new_proc
+                    else:
+                        printlog("keep_cmds_running: ok cmd still running: {}".format(cmd))
+                except:
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = str(traceback.format_exception(type_, value_, traceback_))
+                    printlog("WARNING: keep_cmds_running per cmd check got exception:", exstr)
+                    
+            ### CONFIG based gps data consumers
+            # gps parser - for ble and gpx/nmea logging
+            if config_needs_edg_gps_parser_proc() and gps_parser_proc is None or not gps_parser_proc.is_alive():
+                print "config_needs_edg_gps_parser_proc() so start it"
+                gps_parser_proc = multiprocessing.Process(
+                    target=edg_gps_parser.parse,
+                    args=(shared_gps_data_queues_dict,)
+                )
+                gps_parser_proc.start()
+            else:
+                print "not config_needs_edg_gps_parser_proc() so not starting it"
+
+            if int(CONFIGS["tcp_server"]) == 1 and socket_server_proc is None or not socket_server_proc.is_alive():
+                print 'CONFIGS["tcp_server"] == 1 so starting edg_socker_server'
+                socket_server_proc = multiprocessing.Process(
+                    target=edg_socket_server.start,
+                    args=(shared_gps_data_queues_dict,)
+                )
+                socket_server_proc.start()
+            else:
+                print 'CONFIGS["tcp_server"] == 0 so not starting edg_socker_server'
+
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -524,10 +498,71 @@ def main():
         power_off_bt_dev(args)
         exit(ret)
 
+    prepare_bt_device(args)
+
+    ############# start subprocess commands
 
     shared_gps_data_queues_dict = alloc_gps_data_queues_dict()
+    
+    # start the auto-pair agent    
+    edl_agent_cmd = os.path.join(
+        args["bluez_compassion_path"]
+        ,"edl_agent"
+    )
 
-    prepare_bt_device(args)
+    bluez_gatt_server_py_path = os.path.abspath(
+        os.path.join(
+            edg_utils.get_module_path(),
+            os.pardir,
+            "bluez-gatt-server",
+            "bluez-gatt-server.py"
+        )
+    )
+    
+    ln_feature_mask_dump_str = edg_utils.gen_edg_ln_feature_bitmask_hex_dump_str()
+    print "bitmask_str:", ln_feature_mask_dump_str
+
+    chrc_df = pd.DataFrame(
+        {
+            "assigned_number": [
+                "0x2A6A",
+                "0x2A67"
+            ],
+            "mqtt_url": [
+                "mqtt://localhost:1883/lnf",
+                "mqtt://localhost:1883/las",                
+            ],
+            "default_val_hexdump": [
+                ln_feature_mask_dump_str,
+                "0000"
+            ]
+        }
+    )
+
+    chrc_csv_path = os.path.join(
+        "/tmp",
+        "ln_chrc.csv"
+    )
+
+    chrc_df.to_csv(chrc_csv_path, index=False)
+    chmodret = os.system("chmod 644 {}".format(chrc_csv_path))
+    
+    ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
+        bluez_gatt_server_py_path,
+        chrc_csv_path
+    )
+
+    cmd_list = [edl_agent_cmd]
+
+    if int(CONFIGS["ble"]) == 0:
+        print 'CONFIGS["ble"] is 0 so not starting ble_lnp_cmd'
+    else:
+        print 'CONFIGS["ble"] is not 0 so starting ble_lnp_cmd'
+        cmd_list += [ble_lnp_cmd]
+
+    p = multiprocessing.Process( target=keep_cmds_running, args=(cmd_list, shared_gps_data_queues_dict) )
+    p.start()
+
 
     ### producer - read from gps device, write to it too if we got data from spp back from phone/device
     print "starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]
@@ -536,30 +571,6 @@ def main():
         args=(args["gps_chardev_prefix"], shared_gps_data_queues_dict)
     )
     gps_reader_proc.start()
-
-
-    ### consumers
-
-    # gps parser - for ble and gpx/nmea logging
-    if config_needs_edg_gps_parser_proc():
-        print "config_needs_edg_gps_parser_proc() so start it"
-        gps_parser_proc = multiprocessing.Process(
-            target=edg_gps_parser.parse,
-            args=(shared_gps_data_queues_dict,)
-        )
-        gps_parser_proc.start()
-    else:
-        print "not config_needs_edg_gps_parser_proc() so not starting it"
-
-    if int(CONFIGS["tcp_server"]) == 1:
-        print 'CONFIGS["tcp_server"] == 1 so starting edg_socker_server'
-        socket_server_proc = multiprocessing.Process(
-            target=edg_socket_server.start,
-            args=(shared_gps_data_queues_dict,)
-        )
-        socket_server_proc.start()
-    else:
-        print 'CONFIGS["tcp_server"] == 0 so not starting edg_socker_server'
 
     if int(CONFIGS["spp"]) == 1:
         print 'CONFIGS["spp"] == 1 so starting bluetooth serial port profile reg and loop'
