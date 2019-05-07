@@ -314,25 +314,44 @@ def keep_cmds_running(cmds, shared_gps_data_queues_dict):
                     
             ### CONFIG based gps data consumers
             # gps parser - for ble and gpx/nmea logging
-            if config_needs_edg_gps_parser_proc() and gps_parser_proc is None or not gps_parser_proc.is_alive():
-                print "config_needs_edg_gps_parser_proc() so start it"
-                gps_parser_proc = multiprocessing.Process(
-                    target=edg_gps_parser.parse,
-                    args=(shared_gps_data_queues_dict,)
-                )
-                gps_parser_proc.start()
-            else:
-                print "not config_needs_edg_gps_parser_proc() so not starting it"
+            try:
+                if config_needs_edg_gps_parser_proc():
+                    if (gps_parser_proc is None or not gps_parser_proc.is_alive()):
+                        print "config_needs_edg_gps_parser_proc() but proc not alive so start it"
+                        gps_parser_proc = multiprocessing.Process(
+                            target=edg_gps_parser.parse,
+                            args=(shared_gps_data_queues_dict,)
+                        )
+                        gps_parser_proc.start()
+                    else:
+                        print "config_needs_edg_gps_parser_proc() proc already alive"
+                else:
+                    print "not config_needs_edg_gps_parser_proc() so not starting it"
+            except:
+                type_, value_, traceback_ = sys.exc_info()
+                exstr = str(traceback.format_exception(type_, value_, traceback_))
+                printlog("WARNING: keep_cmds_running gps_parser_proc exception:", exstr)
 
-            if int(CONFIGS["tcp_server"]) == 1 and socket_server_proc is None or not socket_server_proc.is_alive():
-                print 'CONFIGS["tcp_server"] == 1 so starting edg_socker_server'
-                socket_server_proc = multiprocessing.Process(
-                    target=edg_socket_server.start,
-                    args=(shared_gps_data_queues_dict,)
-                )
-                socket_server_proc.start()
-            else:
-                print 'CONFIGS["tcp_server"] == 0 so not starting edg_socker_server'
+
+                
+            # tcp server for u-center over wifi/network connect/config
+            try:
+                if int(CONFIGS["tcp_server"]) == 1:
+                    if (socket_server_proc is None or not socket_server_proc.is_alive()):
+                        print 'CONFIGS["tcp_server"] == 1 but proc not alive so starting edg_socker_server'
+                        socket_server_proc = multiprocessing.Process(
+                            target=edg_socket_server.start,
+                            args=(shared_gps_data_queues_dict,)
+                        )
+                        socket_server_proc.start()
+                    else:
+                        print 'CONFIGS["tcp_server"] == 1 proc already alive'
+                else:
+                    print 'CONFIGS["tcp_server"] == 0 so not starting edg_socker_server'
+            except:
+                type_, value_, traceback_ = sys.exc_info()
+                exstr = str(traceback.format_exception(type_, value_, traceback_))
+                printlog("WARNING: keep_cmds_running tcp_server exception:", exstr)
 
         except:
             type_, value_, traceback_ = sys.exc_info()
