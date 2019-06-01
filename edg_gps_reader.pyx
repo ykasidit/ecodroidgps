@@ -9,21 +9,24 @@ import ecodroidgps_server
 MAX_GPS_DATA_QUEUE_LEN = 100
 
 g_led_fptr = None
-g_last_led_flag = True
 
 LED_WRITE_PATH = "/sys/class/leds/led0/brightness"
-def toggle_led():
+LED_LEAVE_ON_SECS = 0.100  # 100 ms
+
+def send_led(val):
     global g_led_fptr
-    global g_last_led_flag
 
     try:
         if g_led_fptr is None:
+            print("g_led_fptr is None so open LED_WRITE_PATH file")
             g_led_fptr = open(LED_WRITE_PATH, "wb")
 
-        g_last_led_flag = not g_last_led_flag
-        val = 1 if g_last_led_flag else 0
-        g_led_fptr.write(val)
+        g_led_fptr.write(str(val))
     except:
+        try:
+            g_led_fptr.close()
+        except:
+            pass
         g_led_fptr = None  # let it re-open file in case file open fail
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
@@ -45,6 +48,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
         serial_obj = None
         serial_buffer = None
+        last_led_on_time = None
 
         try:
 
@@ -72,8 +76,15 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                     raise Exception("gps_chardev likely disconnected - try connect again...")
 
                 try:
-                    if len(gps_data) > 7 and gps_data[3:6] == "GGA":
-                        toggle_led()
+                    if len(gps_data) > 7:
+                        if gps_data[3:6] == "RMC":
+                            last_led_on_time = time.time()
+                            send_led(0)
+                            
+                    if last_led_on_time is not None and time.time() - last_led_on_time > LED_LEAVE_ON_SECS:
+                        send_led(1)
+                        last_led_on_time = None
+                        
                 except Exception as ledex:
                     print("WARNING: call toggle_led() exception:", ledex)
 
@@ -83,10 +94,10 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                         break
                     try:
                         wbuf = global_write_queue.get_nowait()
-                        print "wqsize:", wqsize, "got wbuf:", wbuf
+                        #print "wqsize:", wqsize, "got wbuf:", wbuf
                         serial_obj.write(wbuf)
                         serial_obj.flush()
-                        print "wbuf write to serial success"
+                        #print "wbuf write to serial success"
                     except Exception as e0:
                         print("wbuf write to serial exception: {}".format(str(e0)))
                     
