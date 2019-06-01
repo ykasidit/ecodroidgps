@@ -68,7 +68,7 @@ def parse(shared_gps_data_queues_dict):
     raise Exception("invalid state")
 
 
-MIN_NMEA_LEN = 5
+MIN_NMEA_LEN = 7
 
 
 def on_nmea(str nmea, dict logger_state_dict,int update_ble_chrc_enabled=0):

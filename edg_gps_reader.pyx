@@ -8,6 +8,29 @@ import ecodroidgps_server
 
 MAX_GPS_DATA_QUEUE_LEN = 100
 
+g_led_fptr = None
+g_last_led_flag = True
+
+LED_WRITE_PATH = "/sys/class/leds/led0/brightness"
+def toggle_led():
+    global g_led_fptr
+    global g_last_led_flag
+
+    try:
+        if g_led_fptr is None:
+            g_led_fptr = open(LED_WRITE_PATH, "wb")
+
+        g_last_led_flag = not g_last_led_flag
+        val = 1 if g_last_led_flag else 0
+        g_led_fptr.write(val)
+    except:
+        g_led_fptr = None  # let it re-open file in case file open fail
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print("WARNING: toggle_led() exception:", exstr)
+    return
+    
+
 
 def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
@@ -47,6 +70,12 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 # print("read_gps: read gps_data:", gps_data)
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
+
+                try:
+                    if len(gps_data) > 7 and gps_data[3:6] == "GGA":
+                        toggle_led()
+                except Exception as ledex:
+                    print("WARNING: call toggle_led() exception:", ledex)
 
                 while True:
                     wqsize = global_write_queue.qsize()

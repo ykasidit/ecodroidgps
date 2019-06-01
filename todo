@@ -1,3 +1,22 @@
+- test rsync, send to harald
+
+- edg rpizerow:
+  - test rtk
+  - ardusimple box case
+  - test u-center dump rinex
+  - test rtk, ppp, ssr fix u-center
+     - test f9 with ntrip rtk base bangkok
+     - test f9 with igs base     
+  - ask ssr in ardusimple forum
+
+  - /data gets formatted too easily - try dont unmount if already mounted, fsck force first
+  - manual install samba
+  - ftp
+  - samba, sees ip
+  * save img
+
+
+
 *update web:
 
 EcoDroidGPS - Bluetooth GPS/GNSS Receiver Kits for Android Phones and Tablets
@@ -26,39 +45,6 @@ Aviailable kits
   - EcoDroidGPS Hub only: Connect it to your desired USB GPS!
 
 
----
-
-* reduce cpu percent/heat in pi:
-  - bt not pair, not work
-  - see /data/j - why gpx not logging
-  - try disconnect usb and reconnect - bt/wifi data must still flow, gpx must still grow
-  - whole system slow during ssh after gpx 1 night
-  
-  - txbuf alloc prevent - see vs f9
-  - all unittests pass
-    - edg_gps_parser test all again
-  ./start.sh reduce prints during operation to none - only flush etc
-
-  - test ble chrc romain quidlet parser then make unittest assert binaries from mqtt_sub of current test_parse_gps.py
-  - test_ble_chrc_parser_performance.py
-    
-
-- edg rpizerow:
-  - test rtk
-  - ardusimple box case
-  - test u-center dump rinex
-  - test rtk, ppp, ssr fix u-center
-     - test f9 with ntrip rtk base bangkok
-     - test f9 with igs base     
-  - ask ssr in ardusimple forum
-
-  - /data gets formatted too easily - try dont unmount if already mounted, fsck force first
-  - manual install samba
-  - ftp
-  - samba, sees ip
-  * save img
-
-  
 
 ---
 
