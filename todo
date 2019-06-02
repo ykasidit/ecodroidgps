@@ -1,3 +1,7 @@
+- turn off bt before dd as image for customer
+- can gen lic without calling server
+- make web instructions how to enable wifi + wpa_conf: for u-center, gpx, nmea logging. How to enable each + how to pull.
+
 - test rsync, send to harald
 
 - edg rpizerow:
