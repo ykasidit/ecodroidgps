@@ -2,6 +2,13 @@ import dbus
 import dbus.service
 import bt_spp_funcs
 
+__copyright__ = "EcoDroidGPS Copyright (c) 2019 Kasidit Yusuf. All rights reserved."
+__author__ = "Kasidit Yusuf"
+__email__ = "ykasidit@gmail.com"
+__status__ = "Production"
+__website__="www.ClearEvo.com"
+
+
 class Profile(dbus.service.Object):
 
     @dbus.service.method("org.bluez.Profile1",

@@ -1,6 +1,13 @@
 import os
 import json
 
+__copyright__ = "EcoDroidGPS Copyright (c) 2019 Kasidit Yusuf. All rights reserved."
+__author__ = "Kasidit Yusuf"
+__email__ = "ykasidit@gmail.com"
+__status__ = "Production"
+__website__="www.ClearEvo.com"
+
+
 LIC_SERVER_URL = 'https://asia-northeast1-turing-terminus-229108.cloudfunctions.net/edg_lic'
 
 

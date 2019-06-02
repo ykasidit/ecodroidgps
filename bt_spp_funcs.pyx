@@ -6,6 +6,12 @@ import traceback
 import edg_utils
 import math
 
+__copyright__ = "EcoDroidGPS Copyright (c) 2019 Kasidit Yusuf. All rights reserved."
+__author__ = "Kasidit Yusuf"
+__email__ = "ykasidit@gmail.com"
+__status__ = "Production"
+__website__="www.ClearEvo.com"
+
 
 # just keep on reading to avoid target device write buffer full issues - read data not used
 # remove q_list_index from q_list_used_indexes when done
