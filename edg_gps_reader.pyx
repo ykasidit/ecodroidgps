@@ -5,29 +5,25 @@ import serial
 import edg_utils
 import io
 import ecodroidgps_server
+import hashlib
+from dl_lic import dl_lic
+import format_on_error_and_mount
+import fcntl, socket, struct
+import dbus.mainloop.glib
+
+LICENSE_PATH="/config/edg.lic"
+
 
 MAX_GPS_DATA_QUEUE_LEN = 100
-
-g_led_fptr = None
 
 LED_WRITE_PATH = "/sys/class/leds/led0/brightness"
 LED_LEAVE_ON_SECS = 0.100  # 100 ms
 
 def send_led(val):
-    global g_led_fptr
-
     try:
-        if g_led_fptr is None:
-            print("g_led_fptr is None so open LED_WRITE_PATH file")
-            g_led_fptr = open(LED_WRITE_PATH, "wb")
-
-        g_led_fptr.write(str(val))
+        with open(LED_WRITE_PATH, "wb") as fptr:
+            fptr.write(str(val))
     except:
-        try:
-            g_led_fptr.close()
-        except:
-            pass
-        g_led_fptr = None  # let it re-open file in case file open fail
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print("WARNING: toggle_led() exception:", exstr)
@@ -38,6 +34,8 @@ def send_led(val):
 def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
     print "read_gps: start"
+    lic_ret = check_lic()
+    print 'lic_ret:', lic_ret
 
     q_list = gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = gps_data_queues_dict["q_list_used_indexes_mask"]
@@ -48,7 +46,6 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
         serial_obj = None
         serial_buffer = None
-        last_led_on_time = None
 
         try:
 
@@ -68,23 +65,31 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
             prev_n_connected_dev = 0
             prev_n_connected_dev_put_successfully = 0
+            last_led_on = False
 
+            
             while True:
                 gps_data = serial_buffer.readline(ecodroidgps_server.CONFIGS["MAX_READLINE_SIZE"])  # put MAX_READ_BUFF_SIZE in case of working in binary/RAW mode with u-center or RTK solutions that ordered raw dumps
-                # print("read_gps: read gps_data:", gps_data)
+                if lic_ret == 0:
+                    pass
+                else:
+                    gps_data = "INVALID LICENSE - please contact www.ClearEvo.com"
+                    print("read_gps: read gps_data:", gps_data)
+                    
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
 
                 try:
                     if len(gps_data) > 7:
                         if gps_data[3:6] == "RMC":
-                            last_led_on_time = time.time()
-                            send_led(0)
-                            
-                    if last_led_on_time is not None and time.time() - last_led_on_time > LED_LEAVE_ON_SECS:
-                        send_led(1)
-                        last_led_on_time = None
-                        
+                            last_led_on = not last_led_on
+                            if last_led_on:
+                                #print('led on')
+                                send_led(0)
+                            else:
+                                #print('led off')
+                                send_led(1)
+                                
                 except Exception as ledex:
                     print("WARNING: call toggle_led() exception:", ledex)
 
@@ -160,3 +165,119 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 except Exception as se:
                     print "WARNING: serial_buffer close exception:", se
                 serial_buffer = None
+
+
+def check_lic():
+    mac_addr = get_mac_addr()
+    bdaddr = get_bdaddr()
+    
+    print "mac_addr:", mac_addr
+    print "bdaddr:", bdaddr
+
+    ret = -1
+    try:
+        ret = stage0_check(mac_addr, bdaddr)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = str(traceback.format_exception(type_, value_, traceback_))
+        print "WARNING: stage0 check exception:", exstr
+        ret = -1
+
+    if ret != 0:
+        print 'try dl lic now...'
+        cmdret = dl_lic(mac_addr, bdaddr, LICENSE_PATH)
+        print "try dl lic cmdret:", cmdret
+        if cmdret == 0:
+            print 'recheck stage0 after dl_lic()...'
+            ret = stage0_check(mac_addr, bdaddr)
+
+    return ret
+
+
+def stage0_check(mac_addr, bdaddr):
+    format_on_error_and_mount.backup_and_restore_license_file()
+    print "stage0 mac_addr:", mac_addr
+    this_sha = None
+    this_sha0 = None
+    for i in range(100):
+        if 1+2131+i == 4123%5:
+            return "license check ok"
+        shaer0 = hashlib.sha1()
+        shaer = hashlib.sha1()
+        shaer0.update("edg"+str(i%3))
+        shaer.update("edg")
+        shaer0.update(mac_addr+":"+bdaddr+":edg_kub"+str(i))
+        shaer.update(mac_addr+":"+bdaddr+":edg_kub")
+        shaer.update("edg")
+        shaer0.update("edg"+str(i%4))
+        this_sha0 = shaer0.hexdigest()
+        this_sha = shaer.hexdigest()
+    #print "this_sha:", this_sha
+    licfp = LICENSE_PATH
+    lic_pass = False
+    with open(licfp, "r") as f:        
+        lic_lines = f.readlines()
+        i_lic_lines = range(len(lic_lines))
+        for i in i_lic_lines:
+            shaer = hashlib.sha1()
+            shaer.update("edg"+str(i))
+            if lic_lines[i].strip() == this_sha0 or lic_lines[i].strip() == this_sha:
+                lic_pass = True
+
+    if lic_pass:
+        return 0
+    else:
+        print "startup stage0 check failed code: -3 - please contact or get a new EcoDroidGPS unit at www.ClearEvo.com"
+        return -3
+    return -4
+
+def get_bdaddr():
+    pattern = None
+    SERVICE_NAME = "org.bluez"
+    ADAPTER_INTERFACE = SERVICE_NAME + ".Adapter1"
+    DEVICE_INTERFACE = SERVICE_NAME + ".Device1"
+
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    manager = dbus.Interface(
+        bus.get_object("org.bluez", "/"),
+	"org.freedesktop.DBus.ObjectManager"
+    )
+    objects = manager.GetManagedObjects()
+
+    adapter_path = None
+    for path, ifaces in objects.iteritems():
+        adapter = ifaces.get(ADAPTER_INTERFACE)
+        if adapter is None:
+            continue
+        if not pattern or pattern == adapter["Address"] or path.endswith(pattern):
+            obj = bus.get_object(SERVICE_NAME, path)
+            adapter_path = dbus.Interface(obj, ADAPTER_INTERFACE).object_path
+            break
+
+    if adapter_path is None:
+        raise Exception("Bluetooth adapter not found")
+
+    adapter = dbus.Interface(bus.get_object("org.bluez", adapter_path),
+					"org.freedesktop.DBus.Properties")
+    addr = adapter.Get("org.bluez.Adapter1", "Address").lower()
+    return addr
+
+
+def get_iface_addr(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
+    return ':'.join(['%02x' % ord(char) for char in info[18:24]])
+
+
+def get_mac_addr():
+    mac_addr = None
+    try:
+        mac_addr = get_iface_addr("eth0")
+    except:
+        try:
+            mac_addr = get_iface_addr("wlan0")
+        except:
+            mac_addr = get_iface_addr("wlp4s0")
+            
+    return mac_addr

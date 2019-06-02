@@ -7,4 +7,4 @@ RestartSec=60
 ExecStart=/bin/bash -c "cd /home/admin/ecodroidgps && ./start.sh"
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=basic.target

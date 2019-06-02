@@ -3,9 +3,10 @@ import os
 import sys
 import argparse
 import traceback
-import ecodroidgps_server
 import platform
 
+
+LICENSE_PATH="/config/edg.lic"
 
 def run_cmd(cmd):
     print "run cmd:", cmd
@@ -16,17 +17,17 @@ def run_cmd(cmd):
 
 def backup_and_restore_license_file():
     tandem_dir = "/data"
-    license_backup_fp = os.path.join(tandem_dir, os.path.basename(ecodroidgps_server.LICENSE_PATH))
-    if os.path.isfile(ecodroidgps_server.LICENSE_PATH):
+    license_backup_fp = os.path.join(tandem_dir, os.path.basename(LICENSE_PATH))
+    if os.path.isfile(LICENSE_PATH):
         print 'license file exists - backup now'
-        cp_to_bk_cmd = '''cp "{}" "{}" '''.format(ecodroidgps_server.LICENSE_PATH, license_backup_fp)
+        cp_to_bk_cmd = '''cp "{}" "{}" '''.format(LICENSE_PATH, license_backup_fp)
         cp_to_bk_ret = os.system(cp_to_bk_cmd)
         print 'cp_to_bk_ret:', cp_to_bk_ret
         return cp_to_bk_ret
     else:
         print 'license file NOT exists - try restore now'
         print 'start restore old license...'
-        cp_from_bk_cmd = '''cp "{}" "{}" && sync '''.format(license_backup_fp, ecodroidgps_server.LICENSE_PATH)
+        cp_from_bk_cmd = '''cp "{}" "{}" && sync '''.format(license_backup_fp, LICENSE_PATH)
         cp_from_bk_ret = os.system(cp_from_bk_cmd)
         print 'cp_from_bk_ret:', cp_from_bk_ret
         if cp_from_bk_ret == 0:
@@ -41,7 +42,7 @@ def do(mlist):
     print "platform.processor()", platform.processor()
     if 'x86' in platform.processor():
         print 'x86 dev pc dont format on error and mount...'
-        return 1
+        return 0
     
     for part in mlist:
         try:
@@ -52,6 +53,7 @@ def do(mlist):
             if not mdir:
                 raise Exception("invalid empty mdir: {}".format(mdir))            
 
+            os.system("SWAPFILE=/data/swapfile && swapoff $SWAPFILE")  # just in case its already used so umount wont fail
             info_cmd_required_tuple_list = [
                 ("umount just in case already mounted...", "umount "+mdir, False),
                 ("make sure target dir exists", "mkdir -p "+mdir, True),                
@@ -80,8 +82,15 @@ def do(mlist):
 
             if ret == 0:
                 print "mount success for part:", part
-                if part == "config":
-                    os.system("mkdir -p /config/bluetooth")  # for bluez to save pair info
+                if part.endswith("/config"):
+                    print 'mkdir config bluetooth'
+                    cbret = os.system("mkdir -p /config/bluetooth")  # for bluez to save pair info
+                    print 'ret:', cbret
+                if part.endswith("/data"):
+                    swap_cmd = "SWAPFILE=/data/swapfile && fallocate -l 2G $SWAPFILE && sudo chmod 600 $SWAPFILE && mkswap $SWAPFILE && swapon $SWAPFILE"
+                    print "swap_cmd:", swap_cmd
+                    swap_ret = os.system(swap_cmd)  # for bluez to save pair info
+                    print "swap_ret:", swap_ret
                 backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")

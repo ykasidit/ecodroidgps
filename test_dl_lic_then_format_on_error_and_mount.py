@@ -1,5 +1,5 @@
 import os
-import ecodroidgps_server
+import edg_gps_reader
 from dl_lic import dl_lic
 import platform
 
@@ -21,8 +21,8 @@ def test():
     assert ret == 0
 
     # dl lic if required
-    mac_addr = ecodroidgps_server.get_mac_addr()
-    bdaddr = ecodroidgps_server.get_bdaddr()
+    mac_addr = edg_gps_reader.get_mac_addr()
+    bdaddr = edg_gps_reader.get_bdaddr()
 
     if mac_addr is None:
         print "INVALID: failed to get mac_addr"
@@ -31,9 +31,9 @@ def test():
     print "mac_addr:", mac_addr
     print "bdaddr:", bdaddr
 
-    dl_lic(mac_addr, bdaddr, ecodroidgps_server.LICENSE_PATH)
+    dl_lic(mac_addr, bdaddr, edg_gps_reader.LICENSE_PATH)
 
-    lic_orignally_exists = os.path.isfile(ecodroidgps_server.LICENSE_PATH)
+    lic_orignally_exists = os.path.isfile(edg_gps_reader.LICENSE_PATH)
     assert lic_orignally_exists
     print 'lic_orignally_exists before run test corrupt and restore partition:', lic_orignally_exists
 
@@ -58,7 +58,7 @@ def test():
         print "cmd ret:", ret
         assert ret == 0
 
-    lic_still_exists = os.path.isfile(ecodroidgps_server.LICENSE_PATH)
+    lic_still_exists = os.path.isfile(edg_gps_reader.LICENSE_PATH)
     print 'lic_still_exists after run test corrupt and restore partition:', lic_still_exists
 
     assert lic_orignally_exists == lic_still_exists
