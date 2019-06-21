@@ -7,8 +7,8 @@ __email__ = "ykasidit@gmail.com"
 __status__ = "Production"
 __website__="www.ClearEvo.com"
 
-
-LIC_SERVER_URL = 'https://asia-northeast1-turing-terminus-229108.cloudfunctions.net/edg_lic'
+# use http instead of https for early boot stage https connection setup fail when first lic dl
+LIC_SERVER_URL = 'http://asia-northeast1-turing-terminus-229108.cloudfunctions.net/edg_lic'
 
 
 def dl_lic(mac_addr, bdaddr, save_path):
