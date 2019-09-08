@@ -11,6 +11,8 @@ exit_if_failed() {
 
 START_DIR=$(pwd)
 
+rm -f *.pyc
+
 time python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p3:/config,/dev/mmcblk0p4:/data
 exit_if_failed
 
@@ -26,7 +28,7 @@ exit_if_failed
 #exit_if_failed
 
 NAME=`cat /config/name.txt || echo 'EcoDroidGPS Bluetooth GPS'`
-time cd ../bluez-compassion && ./hciconfig -a hci0 name "$NAME"
+time cd ../bluez-compassion ; rm -f *.pyc ; ./hciconfig -a hci0 name "$NAME"
 
 cd $START_DIR
 exit_if_failed
