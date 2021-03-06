@@ -28,25 +28,6 @@ PREPARE RASPBERRY PI ZERO W V1.1
 - Go through ansible_scripts/README.md
 - test the pi connect bt serial and ble from Android phone
 
----
-
-DEV and build
--------------
-
-- see also: https://github.com/alexellis/docker-arm/issues/19
-
-- edit files here in host, git commit in host this repo
-- to build enter docker container first:
-  ./start_docker.sh
-  cd ~/ecodroidgps
-  ./build_and_cp_to_bin_repo.sh
-
-- here in host another terminal in ../ecodroidgps_bin
-  - git commit and push to master
-
-- ssh to pi and git pull origin master (or ansible-playbook -s prepare_pi_step1.yml)
-
-
 LICENSE
 -------
 
