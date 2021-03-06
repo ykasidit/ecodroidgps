@@ -1,3 +1,13 @@
+About
+-----
+
+Turns a GNU\Linux computer (or RPi, Orange Pi etc) into a Bluetooth GPS/GNSS device - supplying location from USB GPS device to mobile phones/tablets over Bluetooth.
+
+Running
+-------
+
+`./start.sh`
+
 PREPARE RASPBERRY PI ZERO W V1.1
 ---------
 
