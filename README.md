@@ -35,3 +35,16 @@ DEV and build
   - git commit and push to master
 
 - ssh to pi and git pull origin master (or ansible-playbook -s prepare_pi_step1.yml)
+
+
+LICENSE
+-------
+
+This project is released under the same license as 'BlueZ' - GNU GPL - Please see the LICENSE file.
+
+---
+
+AUTHORS
+-------
+
+Kasidit Yusuf

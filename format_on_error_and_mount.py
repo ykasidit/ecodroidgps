@@ -6,35 +6,11 @@ import traceback
 import platform
 
 
-LICENSE_PATH="/config/edg.lic"
-
 def run_cmd(cmd):
     print "run cmd:", cmd
     ret = os.system(cmd)
     print "run cmd ret:", ret
     return ret
-
-
-def backup_and_restore_license_file():
-    tandem_dir = "/data"
-    license_backup_fp = os.path.join(tandem_dir, os.path.basename(LICENSE_PATH))
-    if os.path.isfile(LICENSE_PATH):
-        print 'license file exists - backup now'
-        cp_to_bk_cmd = '''cp "{}" "{}" '''.format(LICENSE_PATH, license_backup_fp)
-        cp_to_bk_ret = os.system(cp_to_bk_cmd)
-        print 'cp_to_bk_ret:', cp_to_bk_ret
-        return cp_to_bk_ret
-    else:
-        print 'license file NOT exists - try restore now'
-        print 'start restore old license...'
-        cp_from_bk_cmd = '''cp "{}" "{}" && sync '''.format(license_backup_fp, LICENSE_PATH)
-        cp_from_bk_ret = os.system(cp_from_bk_cmd)
-        print 'cp_from_bk_ret:', cp_from_bk_ret
-        if cp_from_bk_ret == 0:
-            print 'license restore from backup success'            
-        else:
-            print 'license restore from backup failed'
-        return cp_from_bk_ret
 
 
 def do(mlist):
@@ -91,7 +67,6 @@ def do(mlist):
                     print "swap_cmd:", swap_cmd
                     swap_ret = os.system(swap_cmd)  # for bluez to save pair info
                     print "swap_ret:", swap_ret
-                backup_and_restore_license_file()
             else:
                 raise Exception("mount failed")
             
