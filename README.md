@@ -33,8 +33,6 @@ LICENSE
 
 This project is released under the same license as 'BlueZ' - GNU GPL - Please see the LICENSE file.
 
----
-
 AUTHORS
 -------
 
