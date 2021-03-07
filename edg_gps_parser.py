@@ -293,3 +293,27 @@ def gen_ecodroidgps_gap_broadcast_buffer(lat, lon, timestamp):
     ret += np.uint32(timestamp).tobytes()
     return ret
     
+
+def parse_ecodroidgps_gap_broadcast_buffer(ba):
+    pos = 0
+    ver = ba[pos]
+    pos += 1
+    assert ver == 1
+    ret = {}
+
+    # lat lon
+    for float_param in ["lat", "lon"]:
+        param_buffer = ba[pos:pos+4]
+        pos += 4
+        assert len(param_buffer) == 4
+        val = np.frombuffer(param_buffer, dtype=np.int32)[0]
+        val = float(val) / float(LAT_LON_RESOLUTION_MULTIPLIER)
+        ret[float_param] = val
+
+    # ts
+    param_buffer = ba[pos:pos+4]
+    pos += 4
+    ts = np.frombuffer(param_buffer, dtype=np.int32)[0]
+    ret["ts"] = ts
+
+    return ret
