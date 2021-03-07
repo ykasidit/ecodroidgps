@@ -1,55 +1,62 @@
-from time import sleep
 from bleson import get_provider, Advertiser, Advertisement
 import bleson
-
-adapter = get_provider().get_adapter()
-
+import edg_gps_parser
+import time
 
 from bleson.core.roles import Advertiser
 from bleson.core.types import Advertisement
 from bleson.interfaces.adapter import Adapter
 from bleson.logger import log
 
+# https://github.com/google/eddystone/blob/master/protocol-specification.md
+FRAME_TYPE_UID = 0x00
+FRAME_TYPE_URL = 0x10
+FRAME_TYPE_TLM = 0x20
+FRAME_TYPE_EID = 0x30
+
 
 class EcoDroidGPSBeacon(Advertiser):
-    """ PyhsicalWeb (Eddystone) Beaon Advertiser
-
-        :param adapter: bluetooth adapter
-        :param url: URL to publish, maximu length of 17
-        :type adapter: :class:`bleson.interfaces.adapter.Adapter`
-        :type url: str
-
-        .. testsetup:: *
-
-           from bleson.beacons.eddystone import EddystoneBeacon
-
-        Example of initialisation with a URL:
-
-        .. testcode:: EDDYSTONE_1
-
-           print(EddystoneBeacon('www.bluetooth.com'))
-
-        Output:
-
-        .. testoutput:: EDDYSTONE_1
-
-           <bleson.beacons.eddystone.EddystoneBeacon object at ...>
+    """ modified from some bleson example...       
     """
-    def __init__(self, adapter, url=None):
+    def __init__(self, adapter, url=None, tlm=None, eid=None):
         super().__init__(adapter)
         self.advertisement=Advertisement()
         self.url = url
+        self.tlm = tlm
+        self.eid = eid
 
     @property
     def url(self):
         return self._url
 
+    @property
+    def tlm(self):
+        return self._tlm
+
+    @property
+    def eid(self):
+        return self._eid
+
     @url.setter
     def url(self, url):
         self._url = url
         if url:
-            self.advertisement.raw_data=self.eddystone_url_adv_data(url)
-            log.debug("Beacon Adv raw data = {}".format(self.advertisement.raw_data))
+            self.advertisement.raw_data=self.eddystone_type_adv_data(url, FRAME_TYPE_URL)
+            log.debug("Beacon Adv URL raw data = {}".format(self.advertisement.raw_data))
+
+    @tlm.setter
+    def tlm(self, tlm):
+        self._tlm = tlm
+        if tlm:
+            self.advertisement.raw_data=self.eddystone_type_adv_data(tlm, FRAME_TYPE_TLM)
+            log.debug("Beacon Adv TLM raw data = {}".format(self.advertisement.raw_data))
+
+    @eid.setter
+    def eid(self, eid):
+        self._eid = eid
+        if eid:
+            self.advertisement.raw_data=self.eddystone_type_adv_data(eid, FRAME_TYPE_EID)
+            log.debug("Beacon Adv EID raw data = {}".format(self.advertisement.raw_data))
 
     # -------------------------------------------
     # Eddystone  (pretty much as-is from the Google source)
@@ -69,7 +76,7 @@ class EcoDroidGPSBeacon(Advertiser):
 
     @classmethod
     def encode_url(cls, url):
-        return range(18)
+        return list(range(18))
         i = 0
         data = []
 
@@ -100,14 +107,10 @@ class EcoDroidGPSBeacon(Advertiser):
         return data
 
     @classmethod
-    def eddystone_url_adv_data(cls, url):
-        log.info("Encoding URL for Eddystone beacon: '{}'".format(url))
-        encodedurl = url
-        encodedurlLength = len(encodedurl)
-        print("encodedurlLength:", encodedurlLength)
-
-        if encodedurlLength > 18:
-            raise ValueError("Encoded url length {} is > 18 maximum length.".format(encodedurlLength))
+    def eddystone_type_adv_data(cls, data, frame_type):
+        log.info("Encoding data for Eddystone beacon: '{}'".format(data))
+        data_len = len(data)
+        print(("data_len:", data_len))
 
         message = [
                 0x02,   # Flags length
@@ -119,27 +122,17 @@ class EcoDroidGPSBeacon(Advertiser):
                 0xaa,   # 16-bit Eddystone UUID
                 0xfe,   # 16-bit Eddystone UUID
 
-                5 + len(encodedurl), # Service Data length
+                5 + len(data), # Service Data length
                 0x16,   # Service Data data type value
                 0xaa,   # 16-bit Eddystone UUID
                 0xfe,   # 16-bit Eddystone UUID
 
-                0x10,   # Eddystone-url frame type
-                0xed,   # txpower
+                frame_type,   # Eddystone-url frame type
+                0x00,   # txpower
                 ]
 
-        message += encodedurl
+        message += data
 
         return bytearray(message)
 
-
-
-
-for i in range(100):
-    beacon = EcoDroidGPSBeacon(adapter)
-    ba = [0x8d,0x04,0x02,0x00,0x51,0x4c,0x93,0xef,0xcc,0x6e,0x37,0x5b,0x34,0x12,0x00]
-    ba[0] = i
-    beacon.url = ba
-    beacon.start()
-    sleep(1.0)
-    beacon.stop()
+    

@@ -11,7 +11,7 @@ import edg_gps_parser
 def test():
     assert os.path.isfile('test_data_logger.ini')
     ecodroidgps_server.load_configs(config_path='test_data_logger_performance.ini')
-    print "configs:", ecodroidgps_server.CONFIGS
+    print("configs:", ecodroidgps_server.CONFIGS)
     assert ecodroidgps_server.CONFIGS['gpx'] == 1
     assert ecodroidgps_server.CONFIGS['nmea'] == 1
 
@@ -20,9 +20,9 @@ def test():
     caught_invalid = False
     try:
         fnprefix_invalid = data_logger.get_utc_datetime_obj(logger_state_dict, ret_str=True)
-        print 'fnprefix_invalid:', fnprefix_invalid
+        print('fnprefix_invalid:', fnprefix_invalid)
     except Exception as e:
-        print 'test invalid rmc datetime ok invalid rmc got exception:', e
+        print('test invalid rmc datetime ok invalid rmc got exception:', e)
         caught_invalid = True
 
     assert caught_invalid
@@ -32,7 +32,7 @@ def test():
 
     prev_added_nmea = None
     with open("ex_nmea.txt", "rb") as f:
-        print 'data_logger ecodroidgps_server.CONFIGS["nmea"]', ecodroidgps_server.CONFIGS["nmea"]
+        print('data_logger ecodroidgps_server.CONFIGS["nmea"]', ecodroidgps_server.CONFIGS["nmea"])
         while True:
             nmea = f.readline()
             if not nmea:
@@ -49,11 +49,11 @@ def test():
             gga = logger_state_dict['gga']
 
         dstr = data_logger.get_last_date_str(logger_state_dict)
-        print 'fn dstr:', dstr
+        print('fn dstr:', dstr)
         dobj = data_logger.get_utc_datetime_obj(logger_state_dict)
-        print 'fn dobj:', dobj ,'type:', type(dobj)
+        print('fn dobj:', dobj ,'type:', type(dobj))
 
-    print 'last added nmea line:', prev_added_nmea
+    print('last added nmea line:', prev_added_nmea)
     # flush gpx and nmea files
     data_logger.on_nmea(logger_state_dict, "", force_flush=True)
                 

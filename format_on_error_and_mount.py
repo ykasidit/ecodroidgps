@@ -7,22 +7,22 @@ import platform
 
 
 def run_cmd(cmd):
-    print "run cmd:", cmd
+    print("run cmd:", cmd)
     ret = os.system(cmd)
-    print "run cmd ret:", ret
+    print("run cmd ret:", ret)
     return ret
 
 
 def do(mlist):
-    print "format_on_error_and_mount list:", mlist
-    print "platform.processor()", platform.processor()
+    print("format_on_error_and_mount list:", mlist)
+    print("platform.processor()", platform.processor())
     if 'x86' in platform.processor():
-        print 'x86 dev pc dont format on error and mount...'
+        print('x86 dev pc dont format on error and mount...')
         return 0
     
     for part in mlist:
         try:
-            print "checking part:", part
+            print("checking part:", part)
             pdev, mdir = part.split(":")
             if not pdev:
                 raise Exception("invalid empty pdev: {}".format(pdev))
@@ -37,18 +37,18 @@ def do(mlist):
 
             for info_cmd_required_tuple in info_cmd_required_tuple_list:
                 info, cmd, required = info_cmd_required_tuple
-                print "info:", info
-                print "required:", required
+                print("info:", info)
+                print("required:", required)
                 ret = run_cmd(cmd)
                 if ret != 0 and required:
                     raise Exception("cmd required and ret !=0")
                     
-            print "try mounting..."
+            print("try mounting...")
             mount_cmd = "mount -t ext4 {} {}".format(pdev, mdir)
             ret = run_cmd(mount_cmd)
             
             if ret != 0:                
-                print "mount failed - format it now..."
+                print("mount failed - format it now...")
                 cmd = "mkfs.ext4 -F {} -L {}".format(pdev, os.path.basename(mdir))
                 ret = run_cmd(cmd)
                 if ret != 0:
@@ -57,23 +57,23 @@ def do(mlist):
                 ret = run_cmd(mount_cmd)
 
             if ret == 0:
-                print "mount success for part:", part
+                print("mount success for part:", part)
                 if part.endswith("/config"):
-                    print 'mkdir config bluetooth'
+                    print('mkdir config bluetooth')
                     cbret = os.system("mkdir -p /config/bluetooth")  # for bluez to save pair info
-                    print 'ret:', cbret
+                    print('ret:', cbret)
                 if part.endswith("/data"):
                     swap_cmd = "SWAPFILE=/data/swapfile && fallocate -l 2G $SWAPFILE && sudo chmod 600 $SWAPFILE && mkswap $SWAPFILE && swapon $SWAPFILE"
-                    print "swap_cmd:", swap_cmd
+                    print("swap_cmd:", swap_cmd)
                     swap_ret = os.system(swap_cmd)  # for bluez to save pair info
-                    print "swap_ret:", swap_ret
+                    print("swap_ret:", swap_ret)
             else:
                 raise Exception("mount failed")
             
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))        
-            print "WARNING: mount part: {} exception: {}".format(part, exstr)
+            print("WARNING: mount part: {} exception: {}".format(part, exstr))
             return 2
 
     
@@ -93,6 +93,6 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     mlist = args["dev_to_dir_list"].split(",")
     ret = do(mlist)
-    print 'do func ret:', ret
+    print('do func ret:', ret)
     exit(ret)
     

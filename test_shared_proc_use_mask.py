@@ -20,12 +20,12 @@ def test():
         for a in range(n_alloc):
             i = bt_spp_funcs.get_q_list_avail_index(gd)
             to_release.append(i)
-            print "alloc got i", i
+            print("alloc got i", i)
         for i in to_release:
             bt_spp_funcs.release_q_list_index(gd, i)
             
     i = bt_spp_funcs.get_q_list_avail_index(gd)
-    print "final alloc i:", i
+    print("final alloc i:", i)
     assert i == pre_loop_i
 
     # no release this one
@@ -35,7 +35,7 @@ def test():
         bt_spp_funcs.get_q_list_avail_index(gd)
 
     i = bt_spp_funcs.get_q_list_avail_index(gd)
-    print "final post more_n got i", i
+    print("final post more_n got i", i)
     assert i == pre_loop_i + more_n + 1
         
             

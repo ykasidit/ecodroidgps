@@ -23,14 +23,14 @@ def send_led(val):
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: toggle_led() exception:", exstr)
+        print(("WARNING: toggle_led() exception:", exstr))
     return
     
 
 
 def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
-    print "read_gps: start"
+    print("read_gps: start")
 
     q_list = gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = gps_data_queues_dict["q_list_used_indexes_mask"]
@@ -47,15 +47,15 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
             for acm in range(0, 10):
                 dev = gps_chardev_prefix + str(acm)
-                print("read_gps: opening gps chardev:"+dev)
-                print("read_gps: using CONFIGS: {}".format(ecodroidgps_server.CONFIGS))
+                print(("read_gps: opening gps chardev:"+dev))
+                print(("read_gps: using CONFIGS: {}".format(ecodroidgps_server.CONFIGS)))
                 try:
                     serial_obj = serial.Serial(dev, timeout=ecodroidgps_server.CONFIGS["PYSERIAL_READ_TIMEOUT"], baudrate=ecodroidgps_server.CONFIGS["BAUD_RATE"])
                     serial_buffer = io.BufferedReader(serial_obj, buffer_size=ecodroidgps_server.CONFIGS["MAX_READ_BUFF_SIZE"])
-                    print("read_gps: opening gps chardev:"+dev+" success")
+                    print(("read_gps: opening gps chardev:"+dev+" success"))
                     break
                 except:
-                    print("read_gps: opening gps chardev:"+dev+" failed - retry next acm number")
+                    print(("read_gps: opening gps chardev:"+dev+" failed - retry next acm number"))
                     continue
 
             prev_n_connected_dev = 0
@@ -81,7 +81,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                                 send_led(1)
                                 
                 except Exception as ledex:
-                    print("WARNING: call toggle_led() exception:", ledex)
+                    print(("WARNING: call toggle_led() exception:", ledex))
 
                 while True:
                     wqsize = global_write_queue.qsize()
@@ -94,7 +94,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                         serial_obj.flush()
                         #print "wbuf write to serial success"
                     except Exception as e0:
-                        print("wbuf write to serial exception: {}".format(str(e0)))
+                        print(("wbuf write to serial exception: {}".format(str(e0))))
                     
 
                 n_connected_dev = 0
@@ -120,40 +120,40 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                                 try:
                                     q.get_nowait()
                                 except Exception as e0:
-                                    print("read_gps: append queue in q_list q_index {} get_nowait exception: {}".format(q_index, str(e0)))
+                                    print(("read_gps: append queue in q_list q_index {} get_nowait exception: {}".format(q_index, str(e0))))
                         try:
                             #print "read_gps: q_index {} q {} q.qsize() {} putting...".format(q_index, q, qsize)
                             q.put_nowait(gps_data)
                             n_connected_dev_put_successfully += 1
                         except Exception as e1:
-                            print("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e1)))
+                            print(("read_gps: append queue in q_list q_index {} put_nowait exception: {}".format(q_index, str(e1))))
                     except Exception:
                         type_, value_, traceback_ = sys.exc_info()
                         exstr = str(traceback.format_exception(type_, value_, traceback_))
-                        print("read_gps: append queue in q_list q_index{} exception: {}".format(q_index, exstr))
+                        print(("read_gps: append queue in q_list q_index{} exception: {}".format(q_index, exstr)))
 
                 if n_connected_dev != prev_n_connected_dev or n_connected_dev_put_successfully != prev_n_connected_dev_put_successfully:
-                    print("read_gps: n_connected_dev {} n_connected_dev_put_successfully {}".format(n_connected_dev, n_connected_dev_put_successfully))
+                    print(("read_gps: n_connected_dev {} n_connected_dev_put_successfully {}".format(n_connected_dev, n_connected_dev_put_successfully)))
                     prev_n_connected_dev = n_connected_dev
                     prev_n_connected_dev_put_successfully = n_connected_dev_put_successfully
 
 
 
         except Exception as e:
-            print("read_gps: exception: "+str(e))
+            print(("read_gps: exception: "+str(e)))
             time.sleep(3)
         finally:            
             if not serial_obj is None:
                 try:
                     serial_obj.close()
                 except Exception as se:
-                    print "WARNING: serial_obj close exception:", se
+                    print("WARNING: serial_obj close exception:", se)
                 serial_obj = None
             if not serial_buffer is None:
                 try:
                     serial_buffer.close()
                 except Exception as se:
-                    print "WARNING: serial_buffer close exception:", se
+                    print("WARNING: serial_buffer close exception:", se)
                 serial_buffer = None
 
 
@@ -173,7 +173,7 @@ def get_bdaddr():
     objects = manager.GetManagedObjects()
 
     adapter_path = None
-    for path, ifaces in objects.iteritems():
+    for path, ifaces in objects.items():
         adapter = ifaces.get(ADAPTER_INTERFACE)
         if adapter is None:
             continue

@@ -117,9 +117,9 @@ def zip_older_logs_get_popen_list():
     for zip_match in zip_match_filters:
         # dont add a timeout as we want all to complete and get removed at end
         cmd = ''' cd /data && find . -maxdepth 1 -name "'''+zip_match+'''" -exec bash -c "echo 'zipping {}' && nice -n15 zip -r -1 - {} > {}.zip && rm -rf {}" \; '''
-        print "zip_older_logs cmd:", cmd
+        print("zip_older_logs cmd:", cmd)
         ret = subprocess.Popen(cmd, shell=True)
-        print 'zip_older_logs() popen ret:', ret
+        print('zip_older_logs() popen ret:', ret)
         ret_list.append(ret)
 
     return ret_list
@@ -133,7 +133,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
     global g_zip_older_logs_ret_list
 
     if g_zip_older_logs_ret_list is None:
-        print 'g_zip_older_logs_get_popen_list is None so run zip_older_logs_get_popen_list()'
+        print('g_zip_older_logs_get_popen_list is None so run zip_older_logs_get_popen_list()')
         g_zip_older_logs_ret_list = zip_older_logs_get_popen_list()
     
     #print 'date_logger.on_nmea() start'
@@ -148,7 +148,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
     #print "now {} logger_state_dict['last_flush_time'] {}".format(now, logger_state_dict['last_flush_time'])
     seconds_since_last_flush = (now - logger_state_dict['last_flush_time'])
     if seconds_since_last_flush > LOG_FLUSH_EVERY_N_SECONDS:
-        print 'data_logger flush now:', now, 'seconds_since_last_flush:', seconds_since_last_flush
+        print('data_logger flush now:', now, 'seconds_since_last_flush:', seconds_since_last_flush)
         logger_state_dict['last_flush_time'] = time.time()
         flush_now = True
     else:
@@ -169,11 +169,11 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
                 # clear nmea_list
                 del nmea_list[:]
                 if force_flush:
-                    print 'WARNING: force flush now - nmea_list len after flush:', len(nmea_list)
+                    print('WARNING: force flush now - nmea_list len after flush:', len(nmea_list))
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
-            print "WARNING: data_loggger nmea exception {}".format(exstr)
+            print("WARNING: data_loggger nmea exception {}".format(exstr))
             del nmea_list[:]  # it might raise during flush so list might eat ram more and more
     
     #### GPX
@@ -232,23 +232,23 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
                 else:
                     open_mode = "r+b"  # if wb and seek then write then all bytes before seek becomes 0 raw data bytes.
 
-                print "flush gpx to fp:", gpxfp
+                print("flush gpx to fp:", gpxfp)
                 # file name/path is unique for a program run
                 with open(gpxfp, open_mode) as f:
                     
                     if first_flush:  # empty file first flush case
                         f.write(header)                        
                         # dont rewind to write body over prev footer as this is the first time
-                        print 'not rewind'
+                        print('not rewind')
                     else:
                         # rewind fpos to prev footer pos write body over prev footer
                         seekpos = logger_state_dict['last_gpx_footer_pos']
-                        print "rewind to prev footer seekpos:", seekpos
+                        print("rewind to prev footer seekpos:", seekpos)
                         f.seek(seekpos, 0)
 
                     f.write(body)
                     footer_pos = f.tell()                    
-                    print "set footer seekpos:", footer_pos
+                    print("set footer seekpos:", footer_pos)
                     logger_state_dict['last_gpx_footer_pos'] = footer_pos  # keep footer position to write over next time
                     f.write(footer)
                 
@@ -257,7 +257,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
-            print "WARNING: data_loggger gpx exception {}".format(exstr)
+            print("WARNING: data_loggger gpx exception {}".format(exstr))
             del logger_state_dict['gpx_segment'].points[:]  # it might raise during flush so list might eat ram more and more
 
 

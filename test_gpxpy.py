@@ -29,7 +29,7 @@ def test():
     with open(fn, "wb") as f:
         buff = gpx.to_xml()
         f.write(buff)
-        print('Created GPX file {} buff:\n {}'.format(fn, buff))
+        print(('Created GPX file {} buff:\n {}'.format(fn, buff)))
         
 
     del gpx_segment.points[:]
@@ -39,7 +39,7 @@ def test():
     with open(fn, "wb") as f:
         buff = gpx.to_xml()
         f.write(buff)
-        print('Created GPX file {} buff:\n {}'.format(fn, buff))
+        print(('Created GPX file {} buff:\n {}'.format(fn, buff)))
 
 
 if __name__ == "__main__":

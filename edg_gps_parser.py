@@ -26,7 +26,7 @@ NMEA_FIX_3D = 3
 
 
 def parse(shared_gps_data_queues_dict):
-    print 'parse() start...'
+    print('parse() start...')
     q_list = shared_gps_data_queues_dict["q_list"]
     q_list_used_indexes_mask = shared_gps_data_queues_dict["q_list_used_indexes_mask"]
     q_list_used_indexes_mask_mutex = shared_gps_data_queues_dict["q_list_used_indexes_mask_mutex"]
@@ -57,13 +57,13 @@ def parse(shared_gps_data_queues_dict):
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = traceback.format_exception(type_, value_, traceback_)
-        print("WARNING: edg_gps_parser.parse got exception:", exstr)
+        print(("WARNING: edg_gps_parser.parse got exception:", exstr))
 
 
     # return the q_list_index to mask
     bt_spp_funcs.release_q_list_index(shared_gps_data_queues_dict, q_list_index)
     
-    print "ABORT - invalid state - control should never reach here..."
+    print("ABORT - invalid state - control should never reach here...")
     raise Exception("invalid state")
 
 
@@ -86,7 +86,7 @@ def on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=0):
                 except:
                     type_, value_, traceback_ = sys.exc_info()
                     exstr = traceback.format_exception(type_, value_, traceback_)
-                    print("WARNING: gps parse exception:", exstr)
+                    print(("WARNING: gps parse exception:", exstr))
             elif "RMC" == nmea_type:
                 rmc = pynmea2.parse(nmea)
                 logger_state_dict['rmc'] = rmc
@@ -105,9 +105,9 @@ def on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=0):
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = traceback.format_exception(type_, value_, traceback_)
-            print("WARNING: log nmea exception:", exstr)
+            print(("WARNING: log nmea exception:", exstr))
     else:
-        print("WARNING: edg_gps_parser.on_nmea() - supplied nmea is not str! ignoring type: {}".format(type(nmea)))
+        print(("WARNING: edg_gps_parser.on_nmea() - supplied nmea is not str! ignoring type: {}".format(type(nmea))))
 
 
 def update_ble_chrc(logger_state_dict):
@@ -125,11 +125,11 @@ def update_ble_chrc(logger_state_dict):
                 ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
                 #print "mqtt pub ret:", ret
             else:
-                print "chrc_bytes none:", chrc_bytes
+                print(("chrc_bytes none:", chrc_bytes))
         except Exception:
             type_, value_, traceback_ = sys.exc_info()
             exstr = traceback.format_exception(type_, value_, traceback_)
-            print("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr)
+            print(("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr))
 
 
 def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):
@@ -160,7 +160,7 @@ def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):
         except:
             type_, value_, traceback_ = sys.exc_info()
             exstr = traceback.format_exception(type_, value_, traceback_)
-            print("WARNING: las_gen_func exception:", exstr)
+            print(("WARNING: las_gen_func exception:", exstr))
 
     if len(payload_list):
         payload_buffer = np.getbuffer(np.concatenate(payload_list))
@@ -185,7 +185,7 @@ def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):
         ret = np.getbuffer(np.concatenate([flag_buffer, payload_buffer]))
         return ret
     else:
-        print "can't create return buffer"
+        print("can't create return buffer")
 
     return None
 
@@ -260,17 +260,7 @@ def gen_position_status_and_location(flag_bit_list, logger_state_dict):
         lat = gga.latitude
         lon = gga.longitude
 
-        lat *= LAT_LON_RESOLUTION_MULTIPLIER
-        lon *= LAT_LON_RESOLUTION_MULTIPLIER
-
-        ret = np.getbuffer(
-            np.concatenate(
-                [
-                    np.getbuffer(np.int32(lat)),
-                    np.getbuffer(np.int32(lon))
-                ]
-            )
-        )
+        ret = gen_lat_lon_buffer(lat, lon)
 
         # set location_present flag
         flag_bit_list.append(ble_bit_offsets.location_and_speed.Location_Present)
@@ -284,3 +274,22 @@ def gen_position_status_and_location(flag_bit_list, logger_state_dict):
     return None
 
 
+def gen_lat_lon_buffer(lat, lon):
+    lat *= LAT_LON_RESOLUTION_MULTIPLIER
+    lon *= LAT_LON_RESOLUTION_MULTIPLIER
+    ret = np.int32(lat).tobytes() + np.int32(lon).tobytes()
+    return ret
+
+
+def gen_ecodroidgps_gap_broadcast_buffer(lat, lon, timestamp):
+    """
+    format:
+    version: uint8: 1
+    lat: int32: this is latitude multiplied by LAT_LON_RESOLUTION_MULTIPLIER
+    lon: int32: this is longitude multiplied by LAT_LON_RESOLUTION_MULTIPLIER
+    """
+    ret = b"\x01"
+    ret += gen_lat_lon_buffer(lat, lon)
+    ret += np.uint32(timestamp).tobytes()
+    return ret
+    

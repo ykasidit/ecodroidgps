@@ -31,13 +31,13 @@ def bits(n):
 def get_on_bit_offset_list(val):
     ret = []
     for b in bits(val):
-        ret.append(long(math.log(b,2))) # b is value, we want bit offset
+        ret.append(int(math.log(b,2))) # b is value, we want bit offset
     return ret
 
 
 def gen_edg_ln_feature_bitmask_hex_dump_str():
     # gen lnf bitmask
-    bitmask = long(0)
+    bitmask = int(0)
 
     ln_bits = [
         ble_bit_offsets.ln_feature.Instantaneous_Speed_Supported,
@@ -47,9 +47,9 @@ def gen_edg_ln_feature_bitmask_hex_dump_str():
         ble_bit_offsets.ln_feature.Position_Status_Supported
     ]
     for bit_offset in ln_bits:
-        print "turn on bit:", bit_offset
+        print("turn on bit:", bit_offset)
         bitmask = bit_utils.set_bit(bitmask, bit_offset)
 
     buffer = np.getbuffer(np.uint32(bitmask))
-    print "buffer: {} type: {}", buffer, type(buffer)
+    print("buffer: {} type: {}", buffer, type(buffer))
     return str(buffer).encode('hex')

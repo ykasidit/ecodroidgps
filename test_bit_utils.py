@@ -7,7 +7,7 @@ def test():
     assert bit_utils.test_bit(4, 2)
     assert bit_utils.test_bit(8, 3)
 
-    val = long(0)
+    val = int(0)
 
     val = bit_utils.set_bit(val, 0)
     assert val == 1  # 0+1
@@ -27,7 +27,7 @@ def test():
     val = bit_utils.clear_bit(val, 2)
     assert val == 0  # 4 - 4
     
-    print "test_bit_utils all passed"
+    print("test_bit_utils all passed")
     
 
 
