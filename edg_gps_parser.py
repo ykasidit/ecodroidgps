@@ -9,6 +9,8 @@ from datetime import datetime
 import gpxpy
 import gpxpy.gpx
 import ecodroidgps_server
+import bleson
+import edg_beacon
 
 import bit_utils
 import ble_bit_offsets
@@ -43,8 +45,6 @@ def parse(shared_gps_data_queues_dict):
     logger_state_dict = data_logger.get_init_logger_state_dict()
 
     queue = q_list[q_list_index]
-
-    update_ble_chrc_enabled = ecodroidgps_server.CONFIGS['ble']
     
     try:
         while True:
@@ -52,7 +52,7 @@ def parse(shared_gps_data_queues_dict):
             #print 'parser got nmea:', nmea
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")
-            on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=update_ble_chrc_enabled)
+            on_nmea(nmea, logger_state_dict)
                 
     except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
@@ -70,7 +70,7 @@ def parse(shared_gps_data_queues_dict):
 MIN_NMEA_LEN = 7
 
 
-def on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=0):
+def on_nmea(nmea, logger_state_dict):
     # handle: TypeError: must be string or buffer, not int
     gga = None
     if isinstance(nmea, str):
@@ -79,14 +79,7 @@ def on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=0):
             if "GGA" == nmea_type:
                 gga = pynmea2.parse(nmea)
                 logger_state_dict['gga'] = gga
-                try:
-                    if update_ble_chrc_enabled:
-                        # update once per GGA
-                        update_ble_chrc(logger_state_dict)
-                except:
-                    type_, value_, traceback_ = sys.exc_info()
-                    exstr = traceback.format_exception(type_, value_, traceback_)
-                    print(("WARNING: gps parse exception:", exstr))
+                on_gga(logger_state_dict)
             elif "RMC" == nmea_type:
                 rmc = pynmea2.parse(nmea)
                 logger_state_dict['rmc'] = rmc
@@ -110,26 +103,73 @@ def on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=0):
         print(("WARNING: edg_gps_parser.on_nmea() - supplied nmea is not str! ignoring type: {}".format(type(nmea))))
 
 
-def update_ble_chrc(logger_state_dict):
+def on_gga(logger_state_dict):
+    gap_enabled = ecodroidgps_server.CONFIGS['gap']
+    update_ble_chrc_enabled = ecodroidgps_server.CONFIGS['ble']
+    try:
+        if gap_enabled:
+            # update once per GGA
+            update_gap_buffer(logger_state_dict)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print(("WARNING: gap_enabled update_gap_buffer exception:", exstr))
+    try:
+        if update_ble_chrc_enabled:
+            # update once per GGA
+            update_ble_chrc(logger_state_dict)
+    except:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print(("WARNING: update_ble_chrc_enabled update_ble_chrc exception:", exstr))
 
-    if update_ble_chrc:
-        try:
-            ###### post parse hooks
-            # populate ble location and speed chrc
-            #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
-            chrc_bytes = gen_ble_location_and_speed_chrc_bytes(logger_state_dict)
-            if chrc_bytes is not None:
-                hexstr = str(chrc_bytes).encode("hex")
-                #print "chrc_bytes valid: {}".format(hexstr)                
-                # publish to mqtt topic
-                ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
-                #print "mqtt pub ret:", ret
-            else:
-                print(("chrc_bytes none:", chrc_bytes))
-        except Exception:
-            type_, value_, traceback_ = sys.exc_info()
-            exstr = traceback.format_exception(type_, value_, traceback_)
-            print(("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr))
+def update_gap_buffer(logger_state_dict):
+    try:
+        beacon = None
+        if 'beacon' in logger_state_dict:
+            beacon = logger_state_dict['beacon']
+        else:
+            adapter = bleson.get_provider().get_adapter()
+            beacon = edg_beacon.EcoDroidGPSBeacon(adapter)
+            logger_state_dict['beacon'] = beacon
+
+        gga = logger_state_dict['gga']
+        if gga is None:
+            raise Exception('gga is still None')
+        lat = gga.latitude
+        lon = gga.longitude
+        #print(logger_state_dict['last_rmc_datetime'])
+        ts = logger_state_dict['last_rmc_datetime'].timestamp()
+        #print("lat:", lat)
+        #print("lat:", lon)
+        #print("ts:", ts)
+        gap_buffer = gen_ecodroidgps_gap_broadcast_buffer(lat, lon, ts)
+        beacon.eid = gap_buffer
+        beacon.start()
+    except Exception:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print(("WARNING: update_gap_buffer exception:", exstr))
+
+
+def update_ble_chrc(logger_state_dict):
+    try:
+        ###### post parse hooks
+        # populate ble location and speed chrc
+        #print "parse_nmea called - call gen_ble_location_and_speed_chrc_bytes"
+        chrc_bytes = gen_ble_location_and_speed_chrc_bytes(logger_state_dict)
+        if chrc_bytes is not None:
+            hexstr = str(chrc_bytes).encode("hex")
+            #print "chrc_bytes valid: {}".format(hexstr)                
+            # publish to mqtt topic
+            ret = os.system("mosquitto_pub -t 'las' -m '{}'".format(hexstr))
+            #print "mqtt pub ret:", ret
+        else:
+            print(("chrc_bytes none:", chrc_bytes))
+    except Exception:
+        type_, value_, traceback_ = sys.exc_info()
+        exstr = traceback.format_exception(type_, value_, traceback_)
+        print(("WARNING: parse_nmea_and_update_ble_chrc: update_ble_chrc exception:", exstr))
 
 
 def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):

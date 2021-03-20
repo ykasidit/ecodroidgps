@@ -2,6 +2,8 @@ import edg_gps_parser
 import data_logger
 import pynmea2
 from datetime import datetime
+import time
+import os
 
 
 def test():
@@ -22,9 +24,16 @@ def test():
     nmeas = None
     with open("ex_nmea.txt", "r") as f:
         nmeas = f.read().replace("\r","").split("\n")
-    
-    for nmea in nmeas:
-        edg_gps_parser.on_nmea(nmea, logger_state_dict, update_ble_chrc_enabled=1)
+
+    loop_gap_broadcast_test = os.path.isfile('loop_gap_broadcast_test')
+    while True:
+        for nmea in nmeas:
+            edg_gps_parser.on_nmea(nmea, logger_state_dict)
+            if loop_gap_broadcast_test:
+                if "GGA" in nmea:
+                    time.sleep(1)
+        if not loop_gap_broadcast_test:
+            break
 
 
 
