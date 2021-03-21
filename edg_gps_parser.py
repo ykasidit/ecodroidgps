@@ -20,6 +20,8 @@ import os
 import pynmea2
 
 
+ECODROIDGPS_EID_BROADCAST_HEADER_BYTE_VERSION1 = np.uint8(0xE1).tobytes()
+
 ############## micropyGPS/nmea consts
 # Fix types can be: 1 = no fix, 2 = 2D fix, 3 = 3D fix
 NMEA_FIX_NO = 1
@@ -324,11 +326,11 @@ def gen_lat_lon_buffer(lat, lon):
 def gen_ecodroidgps_gap_broadcast_buffer(lat, lon, timestamp):
     """
     format:
-    version: uint8: 1
+    version: uint8: 0xE1
     lat: int32: this is latitude multiplied by LAT_LON_RESOLUTION_MULTIPLIER
     lon: int32: this is longitude multiplied by LAT_LON_RESOLUTION_MULTIPLIER
     """
-    ret = b"\x01"
+    ret = ECODROIDGPS_EID_BROADCAST_HEADER_BYTE_VERSION1
     ret += gen_lat_lon_buffer(lat, lon)
     ret += np.uint32(timestamp).tobytes()
     return ret
@@ -338,7 +340,8 @@ def parse_ecodroidgps_gap_broadcast_buffer(ba):
     pos = 0
     ver = ba[pos]
     pos += 1
-    assert ver == 1
+    print("ver:", hex(ver))
+    assert ver == ECODROIDGPS_EID_BROADCAST_HEADER_BYTE_VERSION1[0]
     ret = {}
 
     # lat lon
