@@ -356,7 +356,7 @@ def parse_ecodroidgps_gap_broadcast_buffer(ba):
     # ts
     param_buffer = ba[pos:pos+4]
     pos += 4
-    ts = np.frombuffer(param_buffer, dtype=np.int32)[0]
+    ts = np.frombuffer(param_buffer, dtype=np.uint32)[0]
     ret["ts"] = ts
 
     return ret
