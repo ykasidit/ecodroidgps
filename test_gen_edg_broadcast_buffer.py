@@ -8,7 +8,7 @@ def test():
     lon = -1.0*lat
     ts = time.time()
     ba = edg_gps_parser.gen_ecodroidgps_gap_broadcast_buffer(lat, lon, ts)
-    print("braodcast_buff: {}".format(ba))
+    print("braodcast_buff: {}".format(' '.join(format(x, '02x') for x in ba)))
     parsed = edg_gps_parser.parse_ecodroidgps_gap_broadcast_buffer(ba)
     print("parsed: {}".format(parsed))
     assert parsed["lat"] == lat
