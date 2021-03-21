@@ -2,6 +2,7 @@ from bleson import get_provider, Advertiser, Advertisement
 import bleson
 import edg_gps_parser
 import time
+import edg_utils
 
 from bleson.core.roles import Advertiser
 from bleson.core.types import Advertisement
@@ -108,7 +109,7 @@ class EcoDroidGPSBeacon(Advertiser):
 
     @classmethod
     def eddystone_type_adv_data(cls, data, frame_type):
-        log.info("Encoding data for Eddystone beacon: '{}'".format(data))
+        log.info("Encoding data for Eddystone beacon: '{}'".format(edg_utils.bytes_to_hex(data)))
         data_len = len(data)
         print(("data_len:", data_len))
 

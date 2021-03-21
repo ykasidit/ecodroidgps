@@ -53,3 +53,7 @@ def gen_edg_ln_feature_bitmask_hex_dump_str():
     buffer = np.getbuffer(np.uint32(bitmask))
     print("buffer: {} type: {}", buffer, type(buffer))
     return str(buffer).encode('hex')
+
+
+def bytes_to_hex(ba):
+    return ' '.join(format(x, '02x') for x in ba)
