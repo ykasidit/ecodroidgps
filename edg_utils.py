@@ -3,7 +3,6 @@ import os
 import sys
 import bit_utils
 import ble_bit_offsets
-import numpy as np
 
 
 
@@ -36,6 +35,7 @@ def get_on_bit_offset_list(val):
 
 
 def gen_edg_ln_feature_bitmask_hex_dump_str():
+    import numpy as np
     # gen lnf bitmask
     bitmask = int(0)
 
