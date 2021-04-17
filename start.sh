@@ -28,20 +28,6 @@ time cd ../bluez-compassion ; rm -f *.pyc ; ./hciconfig -a hci0 name "$NAME"
 cd $START_DIR
 exit_if_failed
 
-chmod 777 /data
-exit_if_failed
-
-cd /data
-exit_if_failed
-rm config
-ln -s /config
-exit_if_failed
-
-cd $START_DIR
-exit_if_failed
-chmod 777 /config
-exit_if_failed
-
 date -u
 python ecodroidgps.py --gps_chardev_prefix /dev/ttyACM
 exit_if_failed
