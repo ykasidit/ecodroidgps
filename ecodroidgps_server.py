@@ -18,7 +18,6 @@ import edg_gps_reader
 import bt_spp_profile
 import ctypes
 import edg_socket_server
-import configparser
 import edg_utils
 import edg_gps_parser
 
@@ -63,6 +62,7 @@ def config_needs_edg_gps_parser_proc():
 
 def write_dict_to_ini(d, fpath):
     try:
+        import configparser
         with open(fpath, "wb") as f:
             config = configparser.ConfigParser()
             config.add_section('main')
@@ -78,7 +78,8 @@ def write_dict_to_ini(d, fpath):
 
 
 def load_ini_to_dict_keys(d, fpath):
-    try:        
+    try:
+        import configparser
         config = configparser.ConfigParser()
         ret = os.system('dos2unix {}'.format(fpath))
         print('dos2unix on ini pre-read ret:', ret)
