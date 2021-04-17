@@ -13,11 +13,6 @@ START_DIR=$(pwd)
 
 rm -f *.pyc
 
-time python format_on_error_and_mount.py --dev_to_dir_list /dev/mmcblk0p3:/config,/dev/mmcblk0p4:/data
-exit_if_failed
-
-mkdir -p /config/bluetooth
-
 time systemctl restart bluetooth
 exit_if_failed
 
