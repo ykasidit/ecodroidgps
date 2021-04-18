@@ -4,7 +4,7 @@ After=bluetooth.service
 
 [Service]
 Restart=always
-RestartSec=60
+RestartSec=5
 ExecStart=/bin/bash -c "cd /home/admin/ecodroidgps && ./start.sh"
 
 [Install]

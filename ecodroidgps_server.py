@@ -58,24 +58,26 @@ def config_needs_edg_gps_parser_proc():
     return False    
 
 
-def write_dict_to_ini(d, fpath):
+def write_dict_to_ini(d, fpath, re_raise=False):
     try:
         import configparser
-        with open(fpath, "wb") as f:
+        with open(fpath, "w") as f:
             config = configparser.ConfigParser()
             config.add_section('main')
             for key in d:
-                config.set('main', key, d[key])
+                config.set('main', key, str(d[key]))
             config.write(f)
         ret = os.system('unix2dos {}'.format(fpath))
         print(('unix2dos on written ini ret:', ret))
-    except:
+    except Exception as e:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print(("WARNING: write ini {} exception {}".format(fpath, exstr)))
+        if re_raise:
+            raise e
 
 
-def load_ini_to_dict_keys(d, fpath):
+def load_ini_to_dict_keys(d, fpath, re_raise=False):
     try:
         import configparser
         config = configparser.ConfigParser()
@@ -90,25 +92,38 @@ def load_ini_to_dict_keys(d, fpath):
             except Exception as pe:
                 print(("WARNING: load config for key: {} failed with exception: {}".format(key, pe)))
             print(('load key {} final val {} type {}'.format(key, d[key], type(d[key]))))
-    except:
+    except Exception as e:
+        if re_raise:
+            raise e
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
         print(("WARNING: load ini {} exception {}".format(fpath, exstr)))
 
         
-def load_configs(config_path=CONFIG_PATH):
+def load_configs(config_path=CONFIG_PATH, re_raise=False):
     global CONFIGS
     
     # write default config
-    write_dict_to_ini(CONFIGS, DEFAULT_CONFIG_PATH)
+    write_dict_to_ini(CONFIGS, DEFAULT_CONFIG_PATH, re_raise=re_raise)
     if os.path.isfile(config_path):
-        load_ini_to_dict_keys(CONFIGS, config_path)
+        load_ini_to_dict_keys(CONFIGS, config_path, re_raise=re_raise)
     else:
         print(('WARNING: not os.path.isfile(config_path): {}'.format(config_path)))
-    write_dict_to_ini(CONFIGS, LAST_USED_CONFIG_PATH)
+    write_dict_to_ini(CONFIGS, LAST_USED_CONFIG_PATH, re_raise=re_raise)
     print(('CONFIGS final:', CONFIGS))
     
 
+def watch_configs_for_change(config_path=CONFIG_PATH, re_raise=False):
+    global CONFIGS
+
+    while True:
+        d = {}
+        if os.path.isfile(config_path):
+            load_ini_to_dict_keys(d, config_path, re_raise=re_raise)
+            if d != CONFIGS:
+                return True
+        time.sleep(1)
+    
 
 
 infostr = "EcoDroidGPS v1.2 Copyright (c) 2017 Kasidit Yusuf. Released under the GNU GPL - please see LICENSE file for more info.\nOfficial ready-to-use EcoDroidGPS 'Bluetooth GPS' devices are available at: https://www.ClearEvo.com"
@@ -484,10 +499,10 @@ def main():
         gobject_main_loop.run()
     else:
         print('CONFIGS["spp"] == 0 so not starting bluetooth serial port profile reg and loop')
-        while True:
-            print('main thread sleeping...')
-            time.sleep(60*60)
-            print('main thread woke up...')
+        # watch config for changes - exit upon changes
+        watch_configs_for_change()
+        print("CONFIG CHANGED - exit now so systemctl would restart us and we'd load new configs")
+        exit(1)
 
     print("ecodroidgps_server - terminating")
     exit(0)
