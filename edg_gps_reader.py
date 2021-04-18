@@ -94,7 +94,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                         break
                     try:
                         wbuf = global_write_queue.get_nowait()
-                        #print "wqsize:", wqsize, "got wbuf:", wbuf
+                        #print(("wqsize:", wqsize, "got wbuf:", wbuf))
                         serial_obj.write(wbuf)
                         serial_obj.flush()
                         #print "wbuf write to serial success"

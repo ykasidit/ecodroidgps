@@ -51,7 +51,7 @@ def parse(shared_gps_data_queues_dict):
     try:
         while True:
             nmea = queue.get()
-            nmea = nmea.decode('ascii')
+            nmea = nmea.decode('ascii', errors='ignore')
             #print 'parser got nmea:', nmea
             if nmea is None:
                 raise Exception("edg_gps_parser.parse: got None from queue.get() - ABORT")

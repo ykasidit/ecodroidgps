@@ -25,7 +25,7 @@ def read_fd_until_closed(connected_dev_dbus_path, fd, q_list_index, q_list_used_
             readable, writable, exceptional = select.select([fd], [], [])
             read = os.read(fd, READ_BUFF_SIZE)
             if not read is None:
-                print(("read_fd_until_closed: fd {} read data: {}".format(fd, read)))
+                #print(("read_fd_until_closed: fd {} read data: {}".format(fd, read)))
                 try:
                     global_write_queue.put_nowait(read)
                 except Exception:
@@ -103,9 +103,7 @@ def write_nmea_from_queue_to_fd(connected_dev_dbus_path, queue, fd):
                 break
             readable, writable, exceptional = select.select([], [fd], [])
 
-            if isinstance(nmea, str): # handle: TypeError: must be string or buffer, not int
-                # print "write bt dev {} nmea [{}]".format(connected_dev_dbus_path, nmea)
-                os.write(fd, nmea)
+            os.write(fd, nmea)
                 
     except Exception:
         type_, value_, traceback_ = sys.exc_info()

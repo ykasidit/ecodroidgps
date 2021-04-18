@@ -34,6 +34,17 @@ Running
 
 `sudo ./start.sh`
 
+Manual test
+-----------
+
+- connect from bluetooth gnss app > serial mode must work
+- connect from bluetooth gnss app > broadcast mode must work
+- disconnect usb gps, reconnect - must still work - no need reconnect from app and time must move again
+- disconnect usb bluetooth, reconnect - must still work - needs reconnect from app - auto reconnect from app must work
+- test long duration logging must have no skips/freezes in nmea/gpx time
+- ublox fix type, accuracay must show in app if using ublox usb gps
+- rtk ntrip mode must work from app to over this sw through to ardusimple ublox f9
+
 LICENSE
 -------
 
@@ -43,3 +54,9 @@ AUTHORS
 -------
 
 Kasidit Yusuf
+
+TODO
+----
+
+- patch belson always printing during spp: 2021-04-18 12:19:55,404 WARNING -         linux_adapter.py:276 -                 _on_data(): TODO: Unhandled HCI packet, type=2
+
