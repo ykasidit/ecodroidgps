@@ -15,7 +15,11 @@ MAX_GPS_DATA_QUEUE_LEN = 100
 LED_WRITE_PATH = "/sys/class/leds/led0/brightness"
 LED_LEAVE_ON_SECS = 0.100  # 100 ms
 
+SEND_LED_ENABLED = False
+
 def send_led(val):
+    if not SEND_LED_ENABLED:
+        return
     try:
         with open(LED_WRITE_PATH, "wb") as fptr:
             fptr.write(str(val))
