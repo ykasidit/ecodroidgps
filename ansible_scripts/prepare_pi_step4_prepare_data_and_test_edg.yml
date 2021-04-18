@@ -29,7 +29,7 @@
       fstype: ext4
       state: mounted
 
-  - name: install ecodroidgps pip packages
+  - name: install ecodroidgps pip requirements.txt
     pip:
       requirements: "{{ home }}/ecodroidgps/requirements.txt"
 

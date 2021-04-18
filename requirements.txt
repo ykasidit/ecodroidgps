@@ -1,0 +1,6 @@
+pynmea2
+paho-mqtt
+pytest
+gpxpy
+serial
+bleson
