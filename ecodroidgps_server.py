@@ -498,7 +498,7 @@ def main():
             print('debug_exit_on_spp_reg so exit now')
             sys.exit(0)
         
-        #gobject_main_loop.run()
+        gobject_main_loop.run()
     else:
         print('CONFIGS["spp"] == 0 so not starting bluetooth serial port profile reg and loop')
         
