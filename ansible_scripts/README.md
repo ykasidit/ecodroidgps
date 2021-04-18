@@ -3,7 +3,7 @@ HOWTO RUN ANSIBLE SCRIPTS TO SETUP ECODROIDGPS ON A REMOTE SINGLE BOARD LINUX CO
 
 - install your os (we use armbian on orange pi zero lts)
 - ssh to it for the first time, setup defaul ssh user/pass
-- set ip of device, replace ssh user and password in 'hosts' file in this folder under '[all:vars]' section
+- get ip of device (you can get all local device ips with something like `nmap -sn 192.168.1.0/24`), replace ip under `[pi]` section in `hosts` file, and also ssh user, password under `[all:vars]` section 
 - run through each step like:
 ansible-playbook prepare_pi_step0.yml
 <skip step1 if you dont need mqtt and ble location and navigation profile>
