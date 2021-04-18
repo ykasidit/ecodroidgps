@@ -110,8 +110,8 @@ def on_nmea(nmea, logger_state_dict):
 
 
 def on_gga(logger_state_dict):
-    gap_enabled = ecodroidgps_server.CONFIGS['gap']
-    update_ble_chrc_enabled = ecodroidgps_server.CONFIGS['ble']
+    gap_enabled = int(ecodroidgps_server.CONFIGS['gap'])
+    update_ble_chrc_enabled = int(ecodroidgps_server.CONFIGS['ble'])
     try:
         if gap_enabled:
             # update once per GGA
@@ -226,7 +226,7 @@ def gen_ble_location_and_speed_chrc_bytes(logger_state_dict):
 
         #print "flags val hex:  %02x" % flags
         # return buffer of flags and payload_buffer (payload)
-        flag_buffer = np.getbuffer(np.uint16(flags))
+        flag_buffer = np.getbuffer(np.uint16(flags).tobytes())
         #print "flag_buffer:", str(flag_buffer).encode("hex")
         ret = np.getbuffer(np.concatenate([flag_buffer, payload_buffer]))
         return ret

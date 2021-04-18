@@ -120,7 +120,7 @@ def watch_configs_for_change(config_path=CONFIG_PATH, re_raise=False):
         d = CONFIGS.copy()
         if os.path.isfile(config_path):
             load_ini_to_dict_keys(d, config_path, re_raise=re_raise)
-            print("compare read dict:", d)
+            print("compare config_path: ", config_path, " read dict:", d)
             print("VS current CONFIGS:", CONFIGS)            
             if d != CONFIGS:
                 return True
@@ -496,15 +496,17 @@ def main():
         print("======== register_bluez done === READY TO ACCEPT BT SPP CONNECTIONS")
         if os.path.isfile('debug_exit_on_spp_reg'):
             print('debug_exit_on_spp_reg so exit now')
-            exit(0)
+            sys.exit(0)
         
-        gobject_main_loop.run()
+        #gobject_main_loop.run()
     else:
         print('CONFIGS["spp"] == 0 so not starting bluetooth serial port profile reg and loop')
-        # watch config for changes - exit upon changes
-        watch_configs_for_change()
-        print("CONFIG CHANGED - exit now so systemctl would restart us and we'd load new configs")
-        exit(1)
+        
+    # watch config for changes - exit upon changes
+    watch_configs_for_change()
+    print("CONFIG CHANGED - exit now so systemctl would restart us and we'd load new configs")
+    p.kill()  # keep_proc_running must be killed first as it is not daemonic thread and will still be alive even after we do system.exit next    
+    sys.exit(1)
 
     print("ecodroidgps_server - terminating")
     exit(0)

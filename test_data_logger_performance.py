@@ -22,12 +22,12 @@ def parse(nmeas, logger_state_dict, line_count):
     
 
 def test():
-    ecodroidgps_server.CONFIGS['gap'] = 0
+    ecodroidgps_server.CONFIGS['gap'] = "0"
     assert os.path.isfile('test_data_logger_performance.ini')
     ecodroidgps_server.load_configs(config_path='test_data_logger_performance.ini')
     print(("configs:", ecodroidgps_server.CONFIGS))
-    assert ecodroidgps_server.CONFIGS['gpx'] == 1
-    assert ecodroidgps_server.CONFIGS['nmea'] == 1
+    assert ecodroidgps_server.CONFIGS['gpx'] == "1"
+    assert ecodroidgps_server.CONFIGS['nmea'] == "1"
 
     os.system("rm -rf /data/2019-04-15_02-19-52.gpx")    
     os.system('rm -rf /data/2019-04-15_02-19-52_nmea.txt')

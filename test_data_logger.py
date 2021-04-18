@@ -12,8 +12,8 @@ def test():
     assert os.path.isfile('test_data_logger.ini')
     ecodroidgps_server.load_configs(config_path='test_data_logger_performance.ini')
     print(("configs:", ecodroidgps_server.CONFIGS))
-    assert ecodroidgps_server.CONFIGS['gpx'] == 1
-    assert ecodroidgps_server.CONFIGS['nmea'] == 1
+    assert int(ecodroidgps_server.CONFIGS['gpx']) == 1
+    assert int(ecodroidgps_server.CONFIGS['nmea']) == 1
 
     rmc = pynmea2.RMC('GN', 'RMC', ())
     logger_state_dict = data_logger.get_init_logger_state_dict()

@@ -159,7 +159,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
         flush_now=True
 
     #### NMEA    
-    if ecodroidgps_server.CONFIGS["nmea"] == 1:
+    if int(ecodroidgps_server.CONFIGS["nmea"]) == 1:
         try:
             nmea_list.append(nmea)
             if flush_now:
@@ -177,7 +177,7 @@ def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flus
             del nmea_list[:]  # it might raise during flush so list might eat ram more and more
     
     #### GPX
-    if ecodroidgps_server.CONFIGS["gpx"] == 1:        
+    if int(ecodroidgps_server.CONFIGS["gpx"]) == 1:        
         try:
             # if is gga then append gpx track point list
             if "GGA" in nmea: #isinstance(my_gps, pynmea2.types.talker.GGA):
