@@ -83,12 +83,12 @@ def load_ini_to_dict_keys(d, fpath, re_raise=False):
         config = configparser.ConfigParser()
         ret = os.system('dos2unix {}'.format(fpath))
         print(('dos2unix on ini pre-read ret:', ret))
-
-        config.read(fpath)
+        ret = config.read(fpath)
+        print(("ret", ret))
         for key in d:
             try:
                 d[key] = config.get('main', key)
-                d[key] = eval(d[key])
+                d[key] = str(eval(d[key]))
             except Exception as pe:
                 print(("WARNING: load config for key: {} failed with exception: {}".format(key, pe)))
             print(('load key {} final val {} type {}'.format(key, d[key], type(d[key]))))
@@ -117,9 +117,11 @@ def watch_configs_for_change(config_path=CONFIG_PATH, re_raise=False):
     global CONFIGS
 
     while True:
-        d = {}
+        d = CONFIGS.copy()
         if os.path.isfile(config_path):
             load_ini_to_dict_keys(d, config_path, re_raise=re_raise)
+            print("compare read dict:", d)
+            print("VS current CONFIGS:", CONFIGS)            
             if d != CONFIGS:
                 return True
         time.sleep(1)
