@@ -124,7 +124,7 @@ def watch_configs_for_change(config_path=CONFIG_PATH, re_raise=False):
             print("VS current CONFIGS:", CONFIGS)            
             if d != CONFIGS:
                 return True
-        time.sleep(1)
+        time.sleep(5)
     
 
 
