@@ -55,8 +55,3 @@ AUTHORS
 
 Kasidit Yusuf
 
-TODO
-----
-
-- patch belson always printing during spp: 2021-04-18 12:19:55,404 WARNING -         linux_adapter.py:276 -                 _on_data(): TODO: Unhandled HCI packet, type=2
-

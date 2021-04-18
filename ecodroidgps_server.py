@@ -34,7 +34,7 @@ LAST_USED_CONFIG_PATH="/config/last_used_config.ini"
 CONFIGS = {
     "spp": 1,
     "ble": 0,  # ble location and navigation profile - not well tested - dont use with gap option
-    "gap": 0,  # ble gap (eddystone tlm) broadcast using our own custom format (containing lat/lon) to be parsed by bluetooth gnss android app...
+    "gap": 1,  # ble gap (eddystone tlm) broadcast using our own custom format (containing lat/lon) to be parsed by bluetooth gnss android app...
     "tcp_server": 0,
     "gpx": 0,
     "nmea": 0,

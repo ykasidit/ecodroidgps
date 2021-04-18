@@ -10,6 +10,9 @@ import gpxpy
 import gpxpy.gpx
 import ecodroidgps_server
 import bleson
+import logging
+from bleson import logger
+logger.set_level(logging.ERROR)
 import edg_beacon
 
 import bit_utils
