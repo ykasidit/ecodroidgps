@@ -13,9 +13,9 @@ def test():
     caught_invalid = False
     try:
         fnprefix_invalid = data_logger.get_utc_datetime_obj(logger_state_dict, ret_str=True)
-        print('fnprefix_invalid:', fnprefix_invalid)
+        print(('fnprefix_invalid:', fnprefix_invalid))
     except Exception as e:
-        print('got exception:', e)
+        print(('got exception:', e))
         assert "must be not be less than DEV_YEAR" in str(e)
         caught_invalid = True
 
@@ -32,6 +32,7 @@ def test():
             if loop_gap_broadcast_test:
                 if "GGA" in nmea:
                     time.sleep(1)
+                    pass                
         if not loop_gap_broadcast_test:
             break
 

@@ -29,7 +29,7 @@ cd $START_DIR
 exit_if_failed
 
 date -u
-python ecodroidgps.py --gps_chardev_prefix /dev/ttyACM
+./ecodroidgps.py --gps_chardev_prefix /dev/ttyACM
 exit_if_failed
 
 echo "IF CONTROL REACHES HERE MEANS PROGRAM HAS DIED/ENDED"

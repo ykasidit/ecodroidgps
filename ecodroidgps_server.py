@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#/usr/bin/env python3
 
 import subprocess
 import sys
@@ -36,7 +36,7 @@ LAST_USED_CONFIG_PATH="/config/last_used_config.ini"
 CONFIGS = {
     "spp": 1,
     "ble": 0,  # ble location and navigation profile - not well tested - dont use with gap option
-    "gap": 1,  # ble gap (eddystone tlm) broadcast using our own custom format (containing lat/lon) to be parsed by bluetooth gnss android app...
+    "gap": 0,  # ble gap (eddystone tlm) broadcast using our own custom format (containing lat/lon) to be parsed by bluetooth gnss android app...
     "tcp_server": 0,
     "gpx": 0,
     "nmea": 0,
@@ -70,11 +70,11 @@ def write_dict_to_ini(d, fpath):
                 config.set('main', key, d[key])
             config.write(f)
         ret = os.system('unix2dos {}'.format(fpath))
-        print('unix2dos on written ini ret:', ret)
+        print(('unix2dos on written ini ret:', ret))
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: write ini {} exception {}".format(fpath, exstr))
+        print(("WARNING: write ini {} exception {}".format(fpath, exstr)))
 
 
 def load_ini_to_dict_keys(d, fpath):
@@ -82,7 +82,7 @@ def load_ini_to_dict_keys(d, fpath):
         import configparser
         config = configparser.ConfigParser()
         ret = os.system('dos2unix {}'.format(fpath))
-        print('dos2unix on ini pre-read ret:', ret)
+        print(('dos2unix on ini pre-read ret:', ret))
 
         config.read(fpath)
         for key in d:
@@ -90,12 +90,12 @@ def load_ini_to_dict_keys(d, fpath):
                 d[key] = config.get('main', key)
                 d[key] = eval(d[key])
             except Exception as pe:
-                print("WARNING: load config for key: {} failed with exception: {}".format(key, pe))
-            print('load key {} final val {} type {}'.format(key, d[key], type(d[key])))
+                print(("WARNING: load config for key: {} failed with exception: {}".format(key, pe)))
+            print(('load key {} final val {} type {}'.format(key, d[key], type(d[key]))))
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: load ini {} exception {}".format(fpath, exstr))
+        print(("WARNING: load ini {} exception {}".format(fpath, exstr)))
 
         
 def load_configs(config_path=CONFIG_PATH):
@@ -106,9 +106,9 @@ def load_configs(config_path=CONFIG_PATH):
     if os.path.isfile(config_path):
         load_ini_to_dict_keys(CONFIGS, config_path)
     else:
-        print('WARNING: not os.path.isfile(config_path): {}'.format(config_path))
+        print(('WARNING: not os.path.isfile(config_path): {}'.format(config_path)))
     write_dict_to_ini(CONFIGS, LAST_USED_CONFIG_PATH)
-    print('CONFIGS final:', CONFIGS)
+    print(('CONFIGS final:', CONFIGS))
     
 
 
@@ -367,7 +367,7 @@ def main():
     if not os.path.isdir(args["bluez_compassion_path"]):
         printlog("ABORT: failed to find 'bluez-compassion' folder in current module path:", edg_utils.get_module_path(), "please clone from http://github.com/ykasidit/bluez-compassion")
         exit(-1)
-    print("args['bluez_compassion_path']:", args["bluez_compassion_path"])
+    print(("args['bluez_compassion_path']:", args["bluez_compassion_path"]))
 
     prepare_bt_device(args)
 
@@ -397,7 +397,7 @@ def main():
     # **NOTE** it doesnt work in most cases - need to call it manually in terminal or in systemctl systemd service then it works
     #ret = call_sh_cmd(os.path.join(edg_utils.get_module_path(), "set_class.sh"))
     #print "set_class ret:", ret
-    print("edl_agent_cmd final:", edl_agent_cmd)
+    print(("edl_agent_cmd final:", edl_agent_cmd))
 
     cmd_list = [edl_agent_cmd]
 
@@ -419,7 +419,7 @@ def main():
 
         print("gen ln feature mask dump")
         ln_feature_mask_dump_str = edg_utils.gen_edg_ln_feature_bitmask_hex_dump_str()
-        print("bitmask_str:", ln_feature_mask_dump_str)
+        print(("bitmask_str:", ln_feature_mask_dump_str))
 
         chrc_df = pd.DataFrame(
             {
@@ -447,9 +447,9 @@ def main():
 
         print("chmod chrc csv")
         chmodret = os.system("chmod 644 {}".format(chrc_csv_path))
-        print("chmodret:", chmodret)
+        print(("chmodret:", chmodret))
 
-        ble_lnp_cmd = "python {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
+        ble_lnp_cmd = "python3 {} --service_assigned_number 0x1819 --characteristics_table_csv {}".format(
             bluez_gatt_server_py_path,
             chrc_csv_path
         )
@@ -463,7 +463,7 @@ def main():
 
 
     ### producer - read from gps device, write to it too if we got data from spp back from phone/device
-    print("starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"])
+    print(("starting ecodroidgps_server main loop - gps_chardev_prefix:", args["gps_chardev_prefix"]))
     gps_reader_proc = multiprocessing.Process(
         target=edg_gps_reader.read_gps,
         args=(args["gps_chardev_prefix"], shared_gps_data_queues_dict)

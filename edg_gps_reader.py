@@ -6,7 +6,6 @@ import edg_utils
 import io
 import ecodroidgps_server
 import hashlib
-import format_on_error_and_mount
 import fcntl, socket, struct
 import dbus.mainloop.glib
 
@@ -147,13 +146,13 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 try:
                     serial_obj.close()
                 except Exception as se:
-                    print("WARNING: serial_obj close exception:", se)
+                    print(("WARNING: serial_obj close exception:", se))
                 serial_obj = None
             if not serial_buffer is None:
                 try:
                     serial_buffer.close()
                 except Exception as se:
-                    print("WARNING: serial_buffer close exception:", se)
+                    print(("WARNING: serial_buffer close exception:", se))
                 serial_buffer = None
 
 
@@ -173,7 +172,7 @@ def get_bdaddr():
     objects = manager.GetManagedObjects()
 
     adapter_path = None
-    for path, ifaces in objects.items():
+    for path, ifaces in list(objects.items()):
         adapter = ifaces.get(ADAPTER_INTERFACE)
         if adapter is None:
             continue

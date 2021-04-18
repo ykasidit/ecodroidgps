@@ -28,7 +28,7 @@ def test():
     fn = "gpx_out_test.xml"
     with open(fn, "wb") as f:
         buff = gpx.to_xml()
-        f.write(buff)
+        f.write(buff.encode('ascii'))
         print(('Created GPX file {} buff:\n {}'.format(fn, buff)))
         
 
@@ -38,7 +38,7 @@ def test():
     fn = "gpx_out_test_after_clear.xml"
     with open(fn, "wb") as f:
         buff = gpx.to_xml()
-        f.write(buff)
+        f.write(buff.encode('ascii'))
         print(('Created GPX file {} buff:\n {}'.format(fn, buff)))
 
 

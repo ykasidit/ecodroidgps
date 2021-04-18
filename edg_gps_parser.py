@@ -340,7 +340,7 @@ def parse_ecodroidgps_gap_broadcast_buffer(ba):
     pos = 0
     ver = ba[pos]
     pos += 1
-    print("ver:", hex(ver))
+    print(("ver:", hex(ver)))
     assert ver == ECODROIDGPS_EID_BROADCAST_HEADER_BYTE_VERSION1[0]
     ret = {}
 

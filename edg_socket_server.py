@@ -16,7 +16,7 @@ global_gps_data_queues_dict = None
 
 
 def socket_tx(queue, request, global_gps_data_queues_dict, q_list_index):
-    print('socket_tx start for request:', request)
+    print(('socket_tx start for request:', request))
     try:
         while True:
             nmea = queue.get()
@@ -25,39 +25,39 @@ def socket_tx(queue, request, global_gps_data_queues_dict, q_list_index):
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: socket_tx exception {}".format(exstr))
+        print(("WARNING: socket_tx exception {}".format(exstr)))
     try:
-        print("release_q_list_index {} start".format(q_list_index))
+        print(("release_q_list_index {} start".format(q_list_index)))
         bt_spp_funcs.release_q_list_index(global_gps_data_queues_dict, q_list_index)
-        print("release_q_list_index {} done".format(q_list_index))
+        print(("release_q_list_index {} done".format(q_list_index)))
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: release_q_list_index exception {}".format(exstr))
+        print(("WARNING: release_q_list_index exception {}".format(exstr)))
 
         
-    print('socket_tx end for request:', request)
+    print(('socket_tx end for request:', request))
 
     
 RX_BUF_MAX_SIZE = 2048
 def socket_rx(request, global_write_queue):
-    print('socket_rx start for request:', request)
+    print(('socket_rx start for request:', request))
     try:
         while True:
             rbuf = request.recv(RX_BUF_MAX_SIZE)
             if rbuf is not None:
                 global_write_queue.put_nowait(rbuf)
-                print('socket_rx read and put_nowait done for rbuf:', rbuf)
+                print(('socket_rx read and put_nowait done for rbuf:', rbuf))
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: socket_rx exception {}".format(exstr))
-    print('socket_rx end for request:', request)
+        print(("WARNING: socket_rx exception {}".format(exstr)))
+    print(('socket_rx end for request:', request))
 
 
 def handle(request):
     try:
-        print('edg_socket_server start accept request:', request)
+        print(('edg_socket_server start accept request:', request))
         q_list = global_gps_data_queues_dict["q_list"]
         global_write_queue = global_gps_data_queues_dict["global_write_queue"]
 
@@ -78,9 +78,9 @@ def handle(request):
     except:
         type_, value_, traceback_ = sys.exc_info()
         exstr = str(traceback.format_exception(type_, value_, traceback_))
-        print("WARNING: tcp hadle exception {}".format(exstr))
+        print(("WARNING: tcp hadle exception {}".format(exstr)))
         
-    print('edg_socket_server end accept request:', request)
+    print(('edg_socket_server end accept request:', request))
 
 
 
@@ -102,9 +102,9 @@ def start(shared_gps_data_queues_dict, port=8000):
 
             while True:
                 conn, addr = s.accept()
-                print('edg_socket_server new connection accepted... conn:', conn)
+                print(('edg_socket_server new connection accepted... conn:', conn))
                 handle(conn)
-                print('edg_socket_server new connection handle done... conn:', conn)
+                print(('edg_socket_server new connection handle done... conn:', conn))
 
         except (KeyboardInterrupt, SystemExit):
              print('got KeyboardInterrupt or SystemExit - exit now')
@@ -112,7 +112,7 @@ def start(shared_gps_data_queues_dict, port=8000):
         except Exception as e:                
             type_, value_, traceback_ = sys.exc_info()
             exstr = str(traceback.format_exception(type_, value_, traceback_))
-            print("WARNING: edg_socket_server exception {}".format(exstr))
+            print(("WARNING: edg_socket_server exception {}".format(exstr)))
             
         time.sleep(5.0)  # sleep before retry bind
 

@@ -22,11 +22,6 @@
       regexp: '^(##Class =|#Class =)'
       line: Class = 0x10000
 
-  - lineinfile:
-      path:  /lib/systemd/system/bluetooth.service
-      regexp: '^ExecStart'
-      line: ExecStart=/usr/libexec/bluetooth/bluetoothd --noplugin=wiimote,battery,deviceinfo,hostname
-
   - name: check bluetooth service active
     shell: systemctl is-active bluetooth
 

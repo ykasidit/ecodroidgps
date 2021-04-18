@@ -16,10 +16,17 @@ You can guess its IP from your server or something like below on GNU/Linux syste
 Install from scratch
 --------------------
 
+Please go through README.md in ansible_scripts folder.
 
+Testing
+-------
 
+`make clean`
+`make`
 
+If you get permission errors then you might have to:
 
+`sudo make`
 
 
 Running

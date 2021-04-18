@@ -47,12 +47,12 @@ def gen_edg_ln_feature_bitmask_hex_dump_str():
         ble_bit_offsets.ln_feature.Position_Status_Supported
     ]
     for bit_offset in ln_bits:
-        print("turn on bit:", bit_offset)
+        print(("turn on bit:", bit_offset))
         bitmask = bit_utils.set_bit(bitmask, bit_offset)
 
-    buffer = np.getbuffer(np.uint32(bitmask))
-    print("buffer: {} type: {}", buffer, type(buffer))
-    return str(buffer).encode('hex')
+    buffer = np.uint32(bitmask).tobytes()
+    print(("buffer: {} type: {}", buffer, type(buffer)))
+    return buffer.hex()
 
 
 def bytes_to_hex(ba):

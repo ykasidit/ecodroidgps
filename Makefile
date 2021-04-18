@@ -1,38 +1,15 @@
-#####generic conf
-SRC_FILTER = .c
-LIBS  = 
-CFLAGS = -I.
-LDFLAGS = -lpthread
-CONF = .
-#SOURCES := $(wildcard ./*${SRC_FILTER} )
-SOURCES :=  $(shell find ./ -maxdepth 1 -type f -name '*${SRC_FILTER}')
-################
-
-#############config specific conf
-
-ifeq ($(CONF),.)
-#mkres := $(shell mkdir $(CONF))
-CFLAGS += -g 
-TARGET = ecodroidgps_server
-CC = gcc
-LD = gcc
-endif
+##### used to run all python unittest files (test_*.py) by command 'make' - running it again will not re-do already passed tests - use 'make clean' to clear the passed state and be able to run all again
+MKDIR := $(shell mkdir -p tmp)
+SOURCES :=  $(shell find ./ -maxdepth 1 -type f -name 'test_*.py')
+OBJS := $(shell find -maxdepth 1 -type f -name 'test_*.py' -printf "tmp/%P_test_output\n" | sort)
 
 
-##################################
+run_all_py_unittests: ${OBJS}
+	@echo "SUCCESS - ALL TESTS PASSED"
 
-OBJS := $(patsubst ./%${SRC_FILTER}, ${CONF}/%.o, $(SOURCES))
-
-all: $(TARGET)
-
-$(TARGET): ${OBJS}
-	$(LD) ${OBJS} ${LIBS} ${LDFLAGS} -o ${CONF}/"$(TARGET)"
-
-${CONF}/%.o: %${SRC_FILTER}
-	$(CC) $(CFLAGS) -o $@ -c $<
+tmp/%.py_test_output: %.py
+	@echo "TESTING: $^"
+	@python3 $^ > $@ 2>&1 || (mv -f $@ $@_failed ; echo "FAILED - SEE DETAILS IN FILE: $@_failed --- dumping it below: " ; cat "$@_failed" ; exit 1)
 
 clean:
-	rm -f ${CONF}/$(TARGET)
 	rm -f $(OBJS)
-
-

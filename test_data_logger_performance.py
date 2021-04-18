@@ -12,6 +12,8 @@ import timeit
 
 def parse(nmeas, logger_state_dict, line_count):
     for nmea in nmeas:
+        if isinstance(nmea, bytes):
+            nmea = nmea.decode('ascii')        
         line_count += 1        
         edg_gps_parser.on_nmea(nmea, logger_state_dict)
 
@@ -20,9 +22,10 @@ def parse(nmeas, logger_state_dict, line_count):
     
 
 def test():
+    ecodroidgps_server.CONFIGS['gap'] = 0
     assert os.path.isfile('test_data_logger_performance.ini')
     ecodroidgps_server.load_configs(config_path='test_data_logger_performance.ini')
-    print("configs:", ecodroidgps_server.CONFIGS)
+    print(("configs:", ecodroidgps_server.CONFIGS))
     assert ecodroidgps_server.CONFIGS['gpx'] == 1
     assert ecodroidgps_server.CONFIGS['nmea'] == 1
 
@@ -44,7 +47,7 @@ def test():
     assert EX_NMEA_LINES*n_test_rounds == n_parsed_nmea_lines
     now = time.time()
 
-    print('total_duration for {} rounds of parse and log of "ex_nmea.txt": {} seconds (n_parsed_nmea_lines: {})'.format(n_test_rounds, now - start, n_parsed_nmea_lines))
+    print(('total_duration for {} rounds of parse and log of "ex_nmea.txt": {} seconds (n_parsed_nmea_lines: {})'.format(n_test_rounds, now - start, n_parsed_nmea_lines)))
 
 
 

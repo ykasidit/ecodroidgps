@@ -8,5 +8,6 @@ __website__="www.ClearEvo.com"
 
 
 if __name__ == "__main__":
+    ecodroidgps_server.CONFIGS['gap'] = 1
     ecodroidgps_server.main()
 

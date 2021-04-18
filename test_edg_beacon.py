@@ -3,6 +3,8 @@ import edg_gps_parser
 import bleson
 import time
 
+KEEP_RUNNING_DURATION_SECS = 10
+
 
 def test():
     i = 0
@@ -16,8 +18,8 @@ def test():
         beacon.eid = ba
         beacon.start()
         print("USE NRFCONNECT APP TO CHECK THIS ON PHONE NOW!")
-        time.sleep(0.5)
-        if i >= 60:
+        time.sleep(1.0)
+        if i >= KEEP_RUNNING_DURATION_SECS:
             break
         #beacon.stop()
 
