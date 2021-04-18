@@ -9,7 +9,7 @@
     shell: apt-get update &&  apt-get -y upgrade
   
   - name: install apt packages
-    shell:  apt-get install -y bluez git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev emacs
+    shell:  apt-get install -y bluez git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev emacs python3-gi
 
   - lineinfile:
       path:  /etc/bluetooth/main.conf

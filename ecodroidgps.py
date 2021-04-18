@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import ecodroidgps_server
 
 __copyright__ = "EcoDroidGPS Copyright (c) 2019 Kasidit Yusuf. All rights reserved."
