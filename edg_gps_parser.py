@@ -6,6 +6,8 @@ import sys
 import inspect
 import data_logger
 from datetime import datetime
+import gpxpy
+import gpxpy.gpx
 import ecodroidgps_server
 import bleson
 import edg_beacon

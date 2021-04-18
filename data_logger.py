@@ -1,3 +1,5 @@
+import gpxpy
+import gpxpy.gpx
 from datetime import datetime
 import time
 import platform
@@ -57,8 +59,6 @@ GPX_EXAMPLE='''<?xml version="1.0" encoding="UTF-8"?>
 '''
 
 def get_init_logger_state_dict():
-    import gpxpy
-    import gpxpy.gpx
     logger_state_dict = {}
     logger_state_dict['nmea_list'] = []
     logger_state_dict['log_dir'] = "/data"
@@ -130,8 +130,6 @@ g_zip_older_logs_ret_list = None  # run once
 
         
 def on_nmea(logger_state_dict, nmea, static_gpx_formatstr_no_gpxpy=1, force_flush=False):
-    import gpxpy
-    import gpxpy.gpx
     global g_zip_older_logs_ret_list
 
     if g_zip_older_logs_ret_list is None:
