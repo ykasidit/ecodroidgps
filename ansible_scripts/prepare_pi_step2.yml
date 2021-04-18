@@ -45,7 +45,7 @@
 
   - name: install packages
     apt:
-      name: emacs-nox, htop, python3, ipython3, python3-pip, python3-pandas, python3-dbus, python3-setuptools, python3-dev, expect, zip, samba, samba-common-bin, dos2unix, libxml2-utils
+      name: emacs-nox, htop, python3, ipython3, python3-pip, python3-pandas, python3-dbus, python3-setuptools, python3-dev, expect, zip, samba, samba-common-bin, dos2unix, libxml2-utils, libnss-mdns
       state: present
  
   - name: copy smb.conf
