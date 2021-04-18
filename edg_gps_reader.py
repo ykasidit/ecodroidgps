@@ -53,8 +53,8 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                 print(("read_gps: opening gps chardev: "+dev))
                 print(("read_gps: using CONFIGS: {}".format(ecodroidgps_server.CONFIGS)))
                 try:
-                    serial_obj = serial.Serial(dev, timeout=ecodroidgps_server.CONFIGS["PYSERIAL_READ_TIMEOUT"], baudrate=ecodroidgps_server.CONFIGS["BAUD_RATE"])
-                    serial_buffer = io.BufferedReader(serial_obj, buffer_size=ecodroidgps_server.CONFIGS["MAX_READ_BUFF_SIZE"])
+                    serial_obj = serial.Serial(dev, timeout=float(ecodroidgps_server.CONFIGS["PYSERIAL_READ_TIMEOUT"]), baudrate=int(ecodroidgps_server.CONFIGS["BAUD_RATE"]))
+                    serial_buffer = io.BufferedReader(serial_obj, buffer_size=int(ecodroidgps_server.CONFIGS["MAX_READ_BUFF_SIZE"]))
                     print(("read_gps: opening gps chardev:"+dev+" success"))
                     break
                 except:
@@ -69,7 +69,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
             
             while True:
-                gps_data = serial_buffer.readline(ecodroidgps_server.CONFIGS["MAX_READLINE_SIZE"])  # put MAX_READ_BUFF_SIZE in case of working in binary/RAW mode with u-center or RTK solutions that ordered raw dumps
+                gps_data = serial_buffer.readline(int(ecodroidgps_server.CONFIGS["MAX_READLINE_SIZE"]))  # put MAX_READ_BUFF_SIZE in case of working in binary/RAW mode with u-center or RTK solutions that ordered raw dumps
                     
                 if gps_data is None or gps_data == "":
                     raise Exception("gps_chardev likely disconnected - try connect again...")
