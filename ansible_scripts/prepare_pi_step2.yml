@@ -12,18 +12,50 @@
       password: $6$OjRCvbjSZAF2J$TNkm/B6HCjr1PArGd7OTILT/0JZzTkTxq6ob6tKO6b1qLuKHyPFfvh4pslJ7eMXqwkewMTaU6MNBm2tiHIxdc.
       shell: /bin/bash
 
-  - name: install required apt packages
-    shell: apt-get install -y emacs-nox htop python python-pandas python-numpy ipython python-dbus python-pip python-setuptools python-dev python-gobject expect musl zip samba samba-common-bin dos2unix libxml2-utils
+  - name: make admin sudo without passwd
+    lineinfile:
+      path: /etc/sudoers
+      regexp: '^admin ALL=(ALL) ALL'
+      line: 'admin ALL=(ALL) NOPASSWD: ALL'
 
+  - name: Disable SSH root login
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^PermitRootLogin'
+      line: 'PermitRootLogin no'
+
+  - name: Disable strict host checking in ssh config
+    blockinfile:
+      path: /home/admin/.ssh/config
+      create: yes
+      mode: 0600
+      owner: admin
+      group: admin
+      block: |
+        Host *
+          StrictHostKeyChecking no
+
+  - name: set hostname
+    shell: echo ecodroidgps > /etc/hostname    	  
+
+  - name: restart ssh
+    service:
+      name: ssh
+      state: restarted
+
+  - name: install packages
+    apt:
+      name: emacs-nox, htop, python3, ipython3, python3-pip, python3-pandas, python3-dbus, python3-setuptools, python3-dev, expect, zip, samba, samba-common-bin, dos2unix, libxml2-utils
+      state: present
+ 
   - name: copy smb.conf
     copy:
       src: smb.conf
       dest: /etc/samba/smb.conf
       
-  - shell: sudo /etc/init.d/samba restart
+  - name: restart samba
+    service:
+      name: smbd
+      state: restarted
 
-  - name: install pip packages
-    shell: pip install pyserial paho-mqtt pytest gpxpy pynmea
 
-  - name: prepare musl for ldd of edg cython so compiled from armhf/arm32v6 alpine to load correctly
-    shell: cd /lib && ln -sf ld-musl-armhf.so.1 libc.musl-armhf.so.1

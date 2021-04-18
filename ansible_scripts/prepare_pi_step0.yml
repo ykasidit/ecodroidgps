@@ -1,36 +1,15 @@
 - hosts: pi
   become: yes
   vars:
-    home: /home/pi
-    bluez_url: http://www.kernel.org/pub/linux/bluetooth/bluez-5.50.tar.xz
-    bluez_target_dir: "{{ home }}/bluez-5.50"
+    home: /home/edl
     
   tasks:
-
-  # build and install bluez 5.50 on top of 5.43 in 2018-11-13-raspbian-stretch-lite.img
-  # working steps credit to https://github.com/RuckerGauge/Raspberry-Pi-Zero-W-Bluez-5.50-upgrade-steps
 
   - name: update, upgrade
     shell: apt-get update &&  apt-get -y upgrade
   
   - name: install apt packages
-    shell:  apt-get install -y git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev
-
-  - name: mkdir bluez_target_dir
-    file:
-      path: "{{ bluez_target_dir }}"
-      state: directory
-    
-  - name: download and extract bluez src    
-    unarchive:
-      src: "{{ bluez_url }}"
-      dest: "{{ home }}"
-      remote_src: yes
-
-  - name: bluez configure make make install
-    shell: "cd {{ bluez_target_dir }} && ./configure --prefix=/usr --mandir=/usr/share/man --sysconfdir=/etc --localstatedir=/var --disable-cups --disable-a2dp --disable-avrcp --disable-network --disable-hid --disable-hog && make -j4 &&  make install"
-    args:
-      executable: /bin/bash
+    shell:  apt-get install -y bluez git bc libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev emacs
 
   - lineinfile:
       path:  /etc/bluetooth/main.conf
@@ -48,10 +27,6 @@
       regexp: '^ExecStart'
       line: ExecStart=/usr/libexec/bluetooth/bluetoothd --noplugin=wiimote,battery,deviceinfo,hostname
 
-
-  - name: bluetoothd binary link to new one, systemctl daemon-reload to reload/apply newly installed bluetooth.service that would use the compiled /usr/libexec/bluetooth/bluetoothd instead of the original /usr/lib/bluetooth/bluetoothd
-    shell:   cp /usr/lib/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd-prev && ln -sf /usr/libexec/bluetooth/bluetoothd /usr/lib/bluetooth/bluetoothd && systemctl daemon-reload && systemctl restart bluetooth
-
   - name: check bluetooth service active
     shell: systemctl is-active bluetooth
 
@@ -67,11 +42,6 @@
 
   - name: btmgmt check device present
     shell: btmgmt info | grep addr | grep class
-    args:
-      executable: /bin/bash
-
-  - name: btmgmt check correct dev name applied
-    shell: btmgmt info | grep 'name EcoDroidGPS Bluetooth GPS'
     args:
       executable: /bin/bash
 

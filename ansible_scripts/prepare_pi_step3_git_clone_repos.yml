@@ -12,20 +12,9 @@
       clone: yes
       update: yes
 
-  - name: install/update bluez-gatt-server
-    git:
-      repo: 'https://github.com/ykasidit/bluez-gatt-server.git'
-      dest: "{{ home }}/bluez-gatt-server"
-      clone: yes
-      update: yes
-
   - name: install ecodroidgps
     git:
-      repo: https://gitlab.com/ykasidit/ecodroidgps_bin.git
+      repo: https://github.com/ykasidit/ecodroidgps.git
       dest: "{{ home }}/ecodroidgps"
       clone: yes
       update: yes
-
-  - name: test bluez-gatt-server
-    shell: cd "{{ home }}/bluez-gatt-server" && pytest
-

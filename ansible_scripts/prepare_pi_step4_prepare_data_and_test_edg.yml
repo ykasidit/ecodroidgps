@@ -5,11 +5,33 @@
     
   tasks:
 
-  - name: ensure mount point dirs exist - 'pytest' in ecodroidgps dir would mount to /data and to /config
-    shell: mkdir -p /data ; mkdir -p /config
+  - name: Format /dev/mmcblk0p2 to ext4
+    filesystem:
+      fstype: ext4
+      dev: /dev/mmcblk0p2
 
-  - name: test ecodroidgps
-    shell: cd "{{ home }}/ecodroidgps" && pytest
+  - name: Format /dev/mmcblk0p3 to ext4
+    filesystem:
+      fstype: ext4
+      dev: /dev/mmcblk0p3
+
+  - name: mount mmcblk0p2 to /config (you must create in gparted first)
+    mount:
+      path: /config
+      src: /dev/mmcblk0p2
+      fstype: ext4
+      state: mounted
+
+  - name: mount mmcblk0p3 to /data (you must create in gparted first)
+    mount:
+      path: /data
+      src: /dev/mmcblk0p3
+      fstype: ext4
+      state: mounted
+
+  - name: install ecodroidgps pip packages
+    pip:
+      requirements: "{{ home }}/ecodroidgps/requirements.txt"
 
   - name: prepare bluetooth folder link in mounted dev to store pairing info
     shell: mkdir -p /config/bluetooth && rm -rf /var/lib/bluetooth && ln -sf /config/bluetooth /var/lib/bluetooth
