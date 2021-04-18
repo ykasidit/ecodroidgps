@@ -46,7 +46,7 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
 
             for acm in range(0, 10):
                 dev = gps_chardev_prefix + str(acm)
-                print(("read_gps: opening gps chardev:"+dev))
+                print(("read_gps: opening gps chardev: "+dev))
                 print(("read_gps: using CONFIGS: {}".format(ecodroidgps_server.CONFIGS)))
                 try:
                     serial_obj = serial.Serial(dev, timeout=ecodroidgps_server.CONFIGS["PYSERIAL_READ_TIMEOUT"], baudrate=ecodroidgps_server.CONFIGS["BAUD_RATE"])
@@ -54,7 +54,9 @@ def read_gps(gps_chardev_prefix, gps_data_queues_dict):
                     print(("read_gps: opening gps chardev:"+dev+" success"))
                     break
                 except:
-                    print(("read_gps: opening gps chardev:"+dev+" failed - retry next acm number"))
+                    type_, value_, traceback_ = sys.exc_info()
+                    exstr = str(traceback.format_exception(type_, value_, traceback_))
+                    print(("read_gps: opening gps chardev:"+dev+" failed - retry next acm number - exception: "+exstr))
                     continue
 
             prev_n_connected_dev = 0
